@@ -33,7 +33,7 @@ def write_file(filename, content):
     except Exception as e:
         return f"Error: {str(e)}"
 
-
+#function that returns syntax errors (caught from terminal)
 def run_pylint(filename):
     """Runs linting and returns a cleaned, readable report for the Auditor."""
     try:
@@ -44,3 +44,19 @@ def run_pylint(filename):
     except Exception as e:
         return f"Error running Pylint: {str(e)}"
 
+
+def run_pytest():
+    """Runs tests and returns only the necessary failure details for the Judge."""
+    try:
+        # Import SANDBOX_DIR from validator
+        from utils.code_validator import SANDBOX_DIR
+        result = subprocess.run(["pytest", SANDBOX_DIR], capture_output=True, text=True, timeout=20)
+        
+        if result.returncode == 0:
+            return "SUCCESS: All tests passed."
+        else:
+            return parse_pytest(result.stdout)
+    except subprocess.TimeoutExpired:
+        return "ERROR: Tests timed out (possible infinite loop)."
+    except Exception as e:
+        return f"Error running Pytest: {str(e)}"
