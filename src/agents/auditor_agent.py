@@ -1,4 +1,14 @@
 # src/agents/auditor_agent.py
+"""
+AUDITOR Agent: Analyzes code and creates refactoring plan
+
+Responsibilities:
+1. Run Pylint static analysis
+2. Detect common bug patterns
+3. Generate refactoring plan using LLM
+4. Combine analysis with previous test failures (for iterations)
+"""
+
 import os
 import sys
 import tempfile
@@ -13,9 +23,21 @@ from tools import run_pylint
 
 def detect_generic_patterns(code: str) -> list:
     """
-    Detect GENERIC bug patterns that apply to any Python code
+    Detect common bug patterns in Python code
     
-    Returns list of potential issues found
+    Patterns detected:
+    - Division without zero check
+    - List/array access without bounds check
+    - Dictionary access without key check  
+    - Empty collection operations (sum, max, min)
+    - Mutable default arguments
+    - Infinite loops without exit
+    
+    Args:
+        code: Python code string
+        
+    Returns:
+        List of issue dictionaries with line, category, severity, description, fix
     """
     issues = []
     lines = code.split('\n')
@@ -27,8 +49,10 @@ def detect_generic_patterns(code: str) -> list:
         if not stripped or stripped.startswith('#'):
             continue
         
+        # ====================================================================
         # PATTERN 1: Division without zero check
-        if '/' in line and '//' not in line and not line.strip().startswith('#'):
+        # ====================================================================
+        if '/' in line and '//' not in line:
             context_start = max(0, i - 5)
             context_end = min(len(lines), i + 2)
             context = '\n'.join(lines[context_start:context_end])
@@ -37,10 +61,11 @@ def detect_generic_patterns(code: str) -> list:
                 '== 0' in context,
                 '!= 0' in context,
                 '> 0' in context,
-                'if not' in context and any(var in context for var in ['denominator', 'divisor', 'count', 'total']),
+                'if not' in context,
+                'try' in context
             ])
             
-            if not has_zero_check and 'try' not in context:
+            if not has_zero_check:
                 issues.append({
                     'line': i,
                     'category': 'RUNTIME_ERROR',
@@ -49,31 +74,34 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Add check: if denominator != 0: ... else: return None'
                 })
         
+        # ====================================================================
         # PATTERN 2: List/array access without bounds check
-        if '[' in line and ']' in line:
-            if re.search(r'\w+\[\w+\]', line):
-                context_start = max(0, i - 5)
-                context_end = min(len(lines), i + 2)
-                context = '\n'.join(lines[context_start:context_end])
-                
-                has_bounds_check = any([
-                    'len(' in context,
-                    '< len' in context,
-                    'if ' in context and 'in ' in context,
-                    'try' in context,
-                    'IndexError' in context
-                ])
-                
-                if not has_bounds_check:
-                    issues.append({
-                        'line': i,
-                        'category': 'RUNTIME_ERROR',
-                        'severity': 'HIGH',
-                        'description': f'List access without bounds check: `{stripped}`',
-                        'fix': 'Check: if index < len(list): ...'
-                    })
+        # ====================================================================
+        if '[' in line and ']' in line and re.search(r'\w+\[\w+\]', line):
+            context_start = max(0, i - 5)
+            context_end = min(len(lines), i + 2)
+            context = '\n'.join(lines[context_start:context_end])
+            
+            has_bounds_check = any([
+                'len(' in context,
+                '< len' in context,
+                'if ' in context and 'in ' in context,
+                'try' in context,
+                'IndexError' in context
+            ])
+            
+            if not has_bounds_check:
+                issues.append({
+                    'line': i,
+                    'category': 'RUNTIME_ERROR',
+                    'severity': 'HIGH',
+                    'description': f'List access without bounds check: `{stripped}`',
+                    'fix': 'Check: if index < len(list): ...'
+                })
         
+        # ====================================================================
         # PATTERN 3: Dictionary access without key check
+        # ====================================================================
         if re.search(r'\w+\[[\'\"]?\w+[\'\"]?\]', line) and 'list' not in line.lower():
             context_start = max(0, i - 5)
             context_end = min(len(lines), i + 2)
@@ -95,7 +123,9 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Use .get() or check: if key in dict: ...'
                 })
         
+        # ====================================================================
         # PATTERN 4: Empty collection operations
+        # ====================================================================
         if any(func in line for func in ['sum(', 'max(', 'min(', 'average(']):
             context_start = max(0, i - 5)
             context_end = min(len(lines), i + 2)
@@ -104,6 +134,7 @@ def detect_generic_patterns(code: str) -> list:
             has_empty_check = any([
                 'if not' in context,
                 'if len' in context,
+                'try' in context
             ])
             
             if not has_empty_check:
@@ -115,7 +146,9 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Check: if not collection: return default_value'
                 })
         
-        # PATTERN 5: Mutable default argument
+        # ====================================================================
+        # PATTERN 5: Mutable default argument (Python anti-pattern)
+        # ====================================================================
         if 'def ' in line and '=' in line:
             if any(default in line for default in ['=[]', '={}', '=()', '= []', '= {}', '= ()']):
                 issues.append({
@@ -126,7 +159,9 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Use: def func(arg=None): arg = arg or []'
                 })
         
+        # ====================================================================
         # PATTERN 6: Infinite loop risk
+        # ====================================================================
         if 'while True:' in line:
             context_start = i
             context_end = min(len(lines), i + 20)
@@ -135,7 +170,7 @@ def detect_generic_patterns(code: str) -> list:
             has_exit = any([
                 'break' in context,
                 'return' in context,
-                'raise' in context,
+                'raise' in context
             ])
             
             if not has_exit:
@@ -152,19 +187,27 @@ def detect_generic_patterns(code: str) -> list:
 
 def auditor_agent(state: dict) -> dict:
     """
-    AUDITOR Agent: Reads code, runs static analysis, produces refactoring plan
+    AUDITOR Agent: Analyzes code and produces refactoring plan
     
-    Responsibilities:
-    - Run Pylint static analysis
-    - Detect generic bug patterns
-    - Generate comprehensive audit report
-    - Create refactoring plan for the Fixer
+    Workflow:
+    1. Run Pylint static analysis
+    2. Detect common bug patterns
+    3. Combine with previous test failures (if iteration > 0)
+    4. Generate refactoring plan using LLM
     
     Args:
-        state: Current workflow state
+        state: Workflow state containing:
+            - code: Buggy code to analyze
+            - file_name: Name of file being processed
+            - iteration_count: Current iteration number
+            - pytest_report: Previous test results (if any)
+            - specific_test_failures: Extracted failures (if any)
         
     Returns:
-        Updated state with audit report and refactoring plan
+        Updated state with:
+            - refactoring_plan: Generated plan for Fixer
+            - pylint_report: Pylint analysis output
+            - pattern_detection: Pattern detection results
     """
     print("🔍 [AUDITOR] Auditing code...")
     
@@ -175,13 +218,14 @@ def auditor_agent(state: dict) -> dict:
     if iteration > 0:
         print(f"   🔄 Re-auditing (iteration {iteration + 1})")
     
-    # ===================================================================
-    # STEP 1: Run Pylint (Static Analysis)
-    # ===================================================================
+    # ========================================================================
+    # STEP 1: Run Pylint Static Analysis
+    # ========================================================================
     pylint_report = ""
     temp_file = None
     
     try:
+        # Create temp file for Pylint (it requires a file path)
         fd, temp_file = tempfile.mkstemp(suffix=".py", prefix="audit_")
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
             f.write(buggy_code)
@@ -193,18 +237,20 @@ def auditor_agent(state: dict) -> dict:
         pylint_report = f"Pylint skipped: {str(e)}"
         print(f"   ⚠️ Pylint skipped: {e}")
     finally:
+        # Clean up temp file
         if temp_file and os.path.exists(temp_file):
             try:
                 os.remove(temp_file)
             except:
                 pass
     
-    # ===================================================================
-    # STEP 2: Pattern Detection
-    # ===================================================================
+    # ========================================================================
+    # STEP 2: Detect Bug Patterns
+    # ========================================================================
     print("   🔍 Running pattern detection...")
     pattern_issues = detect_generic_patterns(buggy_code)
     
+    # Format pattern issues into readable report
     pattern_report = ""
     if pattern_issues:
         pattern_report = "\n🎯 PATTERN DETECTION FINDINGS:\n\n"
@@ -233,12 +279,12 @@ def auditor_agent(state: dict) -> dict:
         
         print(f"   🎯 Found {len(pattern_issues)} pattern issues")
     
-    # ===================================================================
+    # ========================================================================
     # STEP 3: Build Context from Previous Iterations
-    # ===================================================================
+    # ========================================================================
     context_parts = []
     
-    # Add pylint findings
+    # Add Pylint findings
     if pylint_report and "skipped" not in pylint_report.lower():
         context_parts.append(f"PYLINT STATIC ANALYSIS:\n{pylint_report}")
     
@@ -246,7 +292,7 @@ def auditor_agent(state: dict) -> dict:
     if pattern_report:
         context_parts.append(pattern_report)
     
-    # Add previous test failures if available
+    # Add previous test failures (for iterations 2+)
     if iteration > 0:
         pytest_report = state.get("pytest_report", "")
         specific_failures = state.get("specific_test_failures", "")
@@ -254,14 +300,15 @@ def auditor_agent(state: dict) -> dict:
         if specific_failures:
             context_parts.append(f"SPECIFIC TEST FAILURES FROM PREVIOUS ITERATION:\n{specific_failures}")
         elif pytest_report and "FAILED" in pytest_report:
+            # Limit to 800 chars to avoid overwhelming LLM
             context_parts.append(f"TEST FAILURES FROM PREVIOUS ITERATION:\n{pytest_report[:800]}")
     
     # Combine all context
     additional_context = "\n\n".join(context_parts) if context_parts else ""
     
-    # ===================================================================
+    # ========================================================================
     # STEP 4: Generate Refactoring Plan with LLM
-    # ===================================================================
+    # ========================================================================
     
     # Build prompt
     if additional_context:
@@ -272,7 +319,7 @@ def auditor_agent(state: dict) -> dict:
     
     llm = ChatGoogleGenerativeAI(
         model="gemini-flash-latest",
-        temperature=0,
+        temperature=0,  # Deterministic for consistent analysis
         google_api_key=os.getenv("GOOGLE_API_KEY"),
         max_retries=1
     )
@@ -280,12 +327,13 @@ def auditor_agent(state: dict) -> dict:
     try:
         response = llm.invoke(input_prompt)
         
+        # Handle list or string response
         if isinstance(response.content, list):
             output_response = ' '.join(str(item) for item in response.content)
         else:
             output_response = str(response.content)
         
-        # Combine all findings into refactoring plan
+        # Combine pattern detection + LLM plan
         refactoring_plan = ""
         if pattern_report:
             refactoring_plan += pattern_report + "\n\n"
@@ -320,12 +368,14 @@ def auditor_agent(state: dict) -> dict:
         print(f"   ✅ Audit complete - refactoring plan generated")
         
     except Exception as e:
+        print(f"   ❌ Audit failed: {e}")
+        
         log_experiment(
             agent_name="Auditor_Agent",
             model_used="gemini-flash-latest",
             action=ActionType.ANALYSIS,
             details={
-                "input_prompt": input_prompt[:500] + "..." if len(input_prompt) > 500 else input_prompt,
+                "input_prompt": input_prompt[:500] + "..." if 'input_prompt' in locals() else "N/A",
                 "output_response": f"ERROR: {str(e)}",
                 "error_message": str(e),
                 "iteration": iteration
@@ -335,6 +385,5 @@ def auditor_agent(state: dict) -> dict:
         
         state["refactoring_plan"] = f"Error: {e}"
         state["pylint_report"] = ""
-        print(f"   ❌ Audit failed: {e}")
     
     return state

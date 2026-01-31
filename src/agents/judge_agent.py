@@ -1,20 +1,152 @@
-# src/agents/judge_agent.py
+"""
+JUDGE Agent: Validates fixes by running tests and provides LLM-powered feedback
+
+Responsibilities:
+1. Validate syntax (compile check)
+2. ALWAYS generate unit tests (regardless of doctests)
+3. Create TEMPORARY file for pytest execution
+4. Run pytest on unit tests
+5. Use LLM to analyze test failures
+6. Parse test results
+7. Generate markdown documentation when tests pass
+8. Provide intelligent feedback to Fixer
+9. Store final code in STATE only
+"""
+
 import os
 import sys
 import re
+import ast
+from langchain_google_genai import ChatGoogleGenerativeAI
 from src.utils.logger import log_experiment, ActionType
+from src.prompts.judge_prompts import JUDGE_VALIDATION_PROMPT, JUDGE_SUCCESS_PROMPT
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tools import run_pytest
-from src.utils.code_validator import SANDBOX_DIR
+from tools import run_pytest, write_file
+
+
+def generate_unit_tests_with_llm(code: str, file_name: str) -> str:
+    """
+    Generate unit tests for code using LLM.
+    
+    Args:
+        code: Python code to generate tests for
+        file_name: Name of the file
+        
+    Returns:
+        Generated test code as string
+    """
+    print("   🤖 Generating unit tests with LLM...")
+    
+    base_name = os.path.splitext(os.path.basename(file_name))[0]
+    
+    prompt = f"""You are a Python testing expert. Generate comprehensive pytest unit tests for the following code.
+
+CODE TO TEST:
+```python
+{code}
+```
+
+REQUIREMENTS:
+1. Create test functions using pytest conventions (test_function_name)
+2. Test ALL functions in the code
+3. Include edge cases: empty inputs, zero values, None, negative numbers
+4. Test expected behavior and error conditions
+5. Use descriptive test names
+6. Import the functions being tested from {base_name}
+7. Use assert statements
+8. Test ALL edge cases thoroughly
+
+CRITICAL - OUTPUT FORMAT:
+Return ONLY valid Python code with NO markdown formatting.
+Start with imports, then write test functions.
+Do NOT include ```python or ``` markers.
+
+Example format:
+import pytest
+from {base_name} import function_name
+
+def test_function_basic():
+    assert function_name(args) == expected
+
+def test_function_edge_case():
+    assert function_name(edge_args) == expected
+
+def test_function_empty_input():
+    assert function_name([]) == expected
+
+Generate the tests now:"""
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-flash-latest",
+        temperature=0.3,  # Some creativity for test generation
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        max_retries=2
+    )
+    
+    try:
+        response = llm.invoke(prompt)
+        
+        if isinstance(response.content, list):
+            test_code = ' '.join(str(item) for item in response.content)
+        else:
+            test_code = str(response.content)
+        
+        # Clean up any markdown formatting
+        test_code = test_code.replace('```python', '').replace('```', '').strip()
+        
+        print(f"   ✅ Generated {len(test_code)} characters of test code")
+        
+        # Log test generation
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="gemini-flash-latest",
+            action=ActionType.GENERATION,
+            details={
+                "file_name": file_name,
+                "input_prompt": prompt[:500] + "...",
+                "output_response": test_code[:500] + "...",
+                "purpose": "unit_test_generation"
+            },
+            status="SUCCESS"
+        )
+        
+        return test_code
+        
+    except Exception as e:
+        print(f"   ❌ Test generation failed: {e}")
+        
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="gemini-flash-latest",
+            action=ActionType.GENERATION,
+            details={
+                "file_name": file_name,
+                "error": str(e),
+                "input_prompt": prompt[:500] + "...",
+                "output_response": f"ERROR: {str(e)}",
+                "purpose": "unit_test_generation"
+            },
+            status="FAILURE"
+        )
+        
+        return None
 
 
 def extract_specific_test_failures(pytest_output: str) -> str:
     """
-    Extract the MOST USEFUL information from pytest failures
+    Extract key information from pytest failures
     
+    Pytest output can be 100+ lines. This extracts the most useful parts:
+    - AssertionErrors with expected vs actual
+    - FAILED test lines
+    - Error messages
+    
+    Args:
+        pytest_output: Full pytest output string
+        
     Returns:
-        Formatted string with key failure information
+        Condensed failure information (top 3 failures)
     """
     if not pytest_output or "FAILED" not in pytest_output:
         return ""
@@ -22,7 +154,7 @@ def extract_specific_test_failures(pytest_output: str) -> str:
     failures = []
     lines = pytest_output.split('\n')
     
-    # Strategy 1: Assertion errors with expected vs actual
+    # Strategy 1: Assertion errors
     for i, line in enumerate(lines):
         if 'AssertionError' in line or ('assert' in line.lower() and '==' in line):
             start = max(0, i - 3)
@@ -31,7 +163,7 @@ def extract_specific_test_failures(pytest_output: str) -> str:
             if len(context.strip()) > 20:
                 failures.append(context)
     
-    # Strategy 2: FAILED lines with test details
+    # Strategy 2: FAILED lines
     for i, line in enumerate(lines):
         if 'FAILED' in line:
             end = min(len(lines), i + 8)
@@ -56,9 +188,9 @@ def extract_specific_test_failures(pytest_output: str) -> str:
             unique_failures.append(failure)
     
     if unique_failures:
-        return "\n\n---\n\n".join(unique_failures[:3])
+        return "\n\n---\n\n".join(unique_failures[:3])  # Top 3
     
-    # Fallback
+    # Fallback: last 600 chars
     return pytest_output[-600:] if len(pytest_output) > 600 else pytest_output
 
 
@@ -66,6 +198,9 @@ def parse_pytest_results(pytest_output: str) -> tuple:
     """
     Parse pytest output to extract pass/fail counts
     
+    Args:
+        pytest_output: Pytest output string
+        
     Returns:
         (passed_count, failed_count, has_tests)
     """
@@ -85,39 +220,355 @@ def parse_pytest_results(pytest_output: str) -> tuple:
     return passed_count, failed_count + error_count, has_tests
 
 
-def judge_agent(state: dict) -> dict:
+def analyze_test_failures_with_llm(fixed_code: str, pytest_output: str) -> str:
     """
-    JUDGE Agent: Executes unit tests and validates fixes
-    
-    Responsibilities:
-    - Execute pytest on fixed code
-    - Validate syntax
-    - Parse test results
-    - Send feedback to Fixer if unsuccessful (Self-Healing Loop)
-    - Confirm mission end if successful
+    Use LLM to analyze test failures and provide intelligent feedback
     
     Args:
-        state: Current workflow state with fixed code
+        fixed_code: The code that was tested
+        pytest_output: Full pytest output
         
     Returns:
-        Updated state with test results and validation status
+        LLM-generated analysis and feedback
+    """
+    print("   🤖 Using LLM to analyze test failures...")
+    
+    # Limit pytest output to avoid token limits
+    truncated_output = pytest_output[-2000:] if len(pytest_output) > 2000 else pytest_output
+    
+    prompt = JUDGE_VALIDATION_PROMPT.format(
+        test_results=truncated_output,
+        code=fixed_code
+    )
+    
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-flash-latest",
+        temperature=0,  # Deterministic analysis
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        max_retries=1
+    )
+    
+    try:
+        response = llm.invoke(prompt)
+        
+        # Handle list or string response
+        if isinstance(response.content, list):
+            analysis = ' '.join(str(item) for item in response.content)
+        else:
+            analysis = str(response.content)
+        
+        print("   ✅ LLM analysis complete")
+        return analysis
+        
+    except Exception as e:
+        print(f"   ⚠️ LLM analysis failed: {e}")
+        # Fallback to basic extraction
+        return extract_specific_test_failures(pytest_output)
+
+
+def generate_documentation_with_llm(code: str, file_name: str) -> str:
+    """
+    Generate comprehensive markdown documentation for code using LLM.
+    
+    Args:
+        code: Python code to document
+        file_name: Name of the file
+        
+    Returns:
+        Generated markdown documentation as string
+    """
+    print("   📝 Generating markdown documentation...")
+    
+    base_name = os.path.splitext(os.path.basename(file_name))[0]
+    
+    prompt = f"""Generate comprehensive markdown documentation for this Python code.
+
+CODE:
+```python
+{code}
+```
+
+Create a complete documentation in Markdown format with:
+
+# {base_name.title().replace('_', ' ')}
+
+## Overview
+[Brief description of what this code does]
+
+## Functions
+
+### function_name(parameters)
+**Description:** [What it does]
+
+**Parameters:**
+- `param_name` (type): Description
+
+**Returns:**
+- type: Description
+
+**Logic:**
+1. Step-by-step explanation of the logic
+2. Any algorithms or patterns used
+3. Edge cases handled
+
+**Examples:**
+```python
+# Usage example
+result = function_name(args)
+```
+
+## Code Structure
+[Explain the overall structure and design decisions]
+
+## Key Features
+- Feature 1
+- Feature 2
+
+## Technical Details
+[Any important implementation details, performance considerations, or design patterns]
+
+Return ONLY the markdown documentation (no code blocks around it):"""
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-flash-latest",
+        temperature=0.3,
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        max_retries=0
+    )
+    
+    try:
+        response = llm.invoke(prompt)
+        
+        if isinstance(response.content, list):
+            documentation = ' '.join(str(item) for item in response.content)
+        else:
+            documentation = str(response.content)
+        
+        # Clean up any markdown code blocks if LLM wrapped it
+        documentation = documentation.replace('```markdown', '').replace('```', '').strip()
+        
+        print(f"   ✅ Generated {len(documentation)} chars of documentation")
+        
+        # Log documentation generation
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="gemini-flash-latest",
+            action=ActionType.GENERATION,
+            details={
+                "file_name": file_name,
+                "documentation_chars": len(documentation),
+                "input_prompt": prompt[:500] + "...",
+                "output_response": documentation[:500] + "...",
+                "purpose": "documentation_generation"
+            },
+            status="SUCCESS"
+        )
+        
+        return documentation
+        
+    except Exception as e:
+        print(f"   ⚠️ Documentation generation failed: {e}")
+        
+        # Fallback basic documentation
+        fallback_doc = f"""# {base_name.title().replace('_', ' ')}
+
+## Overview
+This file contains Python code that has been successfully refactored and validated.
+
+## Status
+✅ All tests passing
+✅ Code validated
+
+## Note
+Automatic documentation generation failed. Please review the code for detailed information.
+"""
+        
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="gemini-flash-latest",
+            action=ActionType.GENERATION,
+            details={
+                "file_name": file_name,
+                "error": str(e),
+                "input_prompt": prompt[:500] + "...",
+                "output_response": f"ERROR: {str(e)}",
+                "purpose": "documentation_generation"
+            },
+            status="FAILURE"
+        )
+        
+        return fallback_doc
+
+
+def generate_success_summary_with_llm(original_code: str, fixed_code: str, refactoring_plan: str, iteration_count: int, file_name: str = "unknown.py") -> tuple[str, str, str]:
+    """
+    Use LLM to generate a summary of what was fixed
+    
+    Args:
+        original_code: Original buggy code
+        fixed_code: Fixed code that passes tests
+        refactoring_plan: The plan that was followed
+        iteration_count: Number of iterations taken
+        file_name: Name of the file being processed
+        
+    Returns:
+        Tuple of (summary, input_prompt, output_response) for logging
+    """
+    print("   🤖 Generating success summary...")
+    
+    prompt = JUDGE_SUCCESS_PROMPT.format(
+        test_results="All tests passed successfully",
+        code=fixed_code,
+        iteration_count=iteration_count
+    )
+    
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-flash-latest",
+        temperature=0.3,
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        max_retries=1
+    )
+    
+    try:
+        response = llm.invoke(prompt)
+        
+        if isinstance(response.content, list):
+            summary = ' '.join(str(item) for item in response.content)
+        else:
+            summary = str(response.content)
+        
+        # Log the success summary generation
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="gemini-flash-latest",
+            action=ActionType.GENERATION,
+            details={
+                "file_name": file_name,
+                "iteration": iteration_count,
+                "input_prompt": prompt[:500] + "..." if len(prompt) > 500 else prompt,
+                "output_response": summary[:500] + "..." if len(summary) > 500 else summary,
+                "purpose": "success_summary_generation"
+            },
+            status="SUCCESS"
+        )
+        
+        return summary, prompt, summary
+        
+    except Exception as e:
+        print(f"   ⚠️ Summary generation failed: {e}")
+        
+        error_summary = "All tests passed successfully."
+        
+        # Log the failure
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="gemini-flash-latest",
+            action=ActionType.GENERATION,
+            details={
+                "file_name": file_name,
+                "iteration": iteration_count,
+                "input_prompt": prompt[:500] + "..." if len(prompt) > 500 else prompt,
+                "output_response": f"ERROR: {str(e)}",
+                "purpose": "success_summary_generation"
+            },
+            status="FAILURE"
+        )
+        
+        return error_summary, prompt, f"ERROR: {str(e)}"
+
+
+def judge_agent(state: dict) -> dict:
+    """
+    JUDGE Agent: Validates fixes and provides LLM-powered feedback
+    
+    Workflow:
+    1. Validate max_iterations parameter
+    2. Validate syntax (compile check)
+    3. ALWAYS generate unit tests with LLM
+    4. Create TEMPORARY files for pytest
+    5. Run pytest on unit tests
+    6. Use LLM to analyze failures
+    7. Parse results
+    8. Store final code in STATE (no file writing)
+    
+    Args:
+        state: Workflow state containing:
+            - fixed_code: Code from Fixer
+            - file_name: Original file name
+            - iteration_count: Current iteration
+            - max_iterations: Maximum allowed iterations (required, must be ≤ 10)
+        
+    Returns:
+        Updated state with:
+            - is_fixed: True if all tests pass
+            - refactored_code: Final code in state (main will write it)
+            - pytest_report: Full test output
+            - specific_test_failures: LLM-analyzed failures for Fixer
+            - iteration_count: Incremented
     """
     print("⚖️ [JUDGE] Validating fixes...")
     
     fixed_code = state.get("fixed_code", state["code"])
     file_name = state.get("file_name", "unknown.py")
     iteration = state.get("iteration_count", 0)
+    original_code = state.get("code", "")
+    refactoring_plan = state.get("refactoring_plan", "")
+    
+    # ========================================================================
+    # VALIDATE max_iterations PARAMETER
+    # ========================================================================
+    max_iterations = state.get("max_iterations")
+    
+    # Check if max_iterations is provided
+    if max_iterations is None:
+        error_msg = "❌ ERROR: max_iterations parameter is required but not provided!"
+        print(f"   {error_msg}")
+        
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="validation",
+            action=ActionType.GENERATION,
+            details={
+                "error": "Missing max_iterations parameter",
+                "input_prompt": "Validating max_iterations parameter",
+                "output_response": error_msg
+            },
+            status="FAILURE"
+        )
+        
+        raise ValueError("max_iterations parameter is required")
+    
+    # Check if max_iterations exceeds 10
+    if max_iterations > 10:
+        error_msg = f"❌ ERROR: max_iterations={max_iterations} exceeds maximum allowed value of 10!"
+        print(f"   {error_msg}")
+        
+        log_experiment(
+            agent_name="Judge_Agent",
+            model_used="validation",
+            action=ActionType.GENERATION,
+            details={
+                "error": f"max_iterations {max_iterations} > 10",
+                "input_prompt": "Validating max_iterations parameter",
+                "output_response": error_msg
+            },
+            status="FAILURE"
+        )
+        
+        raise ValueError(f"max_iterations must not exceed 10 (got {max_iterations})")
+    
+    print(f"   ✅ max_iterations validated: {max_iterations} (≤ 10)")
     
     # Increment iteration counter
     state["iteration_count"] = iteration + 1
     
-    pytest_output = ""
-    specific_failures = ""
     syntax_valid = False
+    temp_test_file = None
+    temp_source_file = None
     
-    # ===================================================================
+    # ========================================================================
     # STEP 1: SYNTAX VALIDATION
-    # ===================================================================
+    # ========================================================================
     try:
         compile(fixed_code, '<string>', 'exec')
         print("   ✅ Syntax valid")
@@ -129,15 +580,16 @@ def judge_agent(state: dict) -> dict:
         if 0 <= e.lineno - 1 < len(lines):
             print(f"      Line {e.lineno}: {lines[e.lineno - 1]}")
         
+        # Prepare feedback for Fixer
         syntax_error_details = f"Syntax error at line {e.lineno}: {e.msg}"
         if 0 <= e.lineno - 1 < len(lines):
             syntax_error_details += f"\nProblematic line: {lines[e.lineno - 1]}"
         
-        # Update state with syntax error feedback
+        # Update state
         state["is_fixed"] = False
         state["pytest_report"] = f"SYNTAX ERROR at line {e.lineno}: {e.msg}"
         state["specific_test_failures"] = syntax_error_details
-        state["code"] = fixed_code
+        state["code"] = fixed_code  # Update for next iteration
         
         log_experiment(
             agent_name="Judge_Agent",
@@ -156,35 +608,72 @@ def judge_agent(state: dict) -> dict:
         print("   🔄 Sending syntax error feedback to Fixer")
         return state
     
-    # ===================================================================
-    # STEP 2: SAVE FIXED CODE
-    # ===================================================================
+    # ========================================================================
+    # STEP 2: ALWAYS GENERATE UNIT TESTS WITH LLM
+    # ========================================================================
+    print("   🧪 Generating unit tests for validation...")
+    generated_tests = generate_unit_tests_with_llm(fixed_code, file_name)
+    
+    if not generated_tests:
+        print("   ❌ Failed to generate unit tests")
+        state["is_fixed"] = False
+        state["pytest_report"] = "No tests available - test generation failed"
+        state["specific_test_failures"] = "Could not generate unit tests automatically"
+        return state
+    
+    print("   ✅ Unit tests generated successfully")
+    
+    # ========================================================================
+    # STEP 3: CREATE TEMPORARY FILES FOR PYTEST
+    # ========================================================================
     try:
+        # Get the project root and sandbox directory
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(current_file_dir, '../..'))
+        sandbox_dir = os.path.join(project_root, 'sandbox')
+        
+        # Ensure sandbox directory exists
+        os.makedirs(sandbox_dir, exist_ok=True)
+        
         base_name = os.path.splitext(os.path.basename(file_name))[0]
-        fixed_file_path = os.path.join(SANDBOX_DIR, f"{base_name}_fixed.py")
         
-        os.makedirs(SANDBOX_DIR, exist_ok=True)
+        # ALWAYS create TWO files for unit testing:
+        # 1. Source file (without _fixed to allow imports)
+        # 2. Test file with test_ prefix
         
-        with open(fixed_file_path, 'w', encoding='utf-8') as f:
+        source_file_name = f"{base_name}_temp.py"
+        test_file_name = f"test_{base_name}_temp.py"
+        
+        temp_source_file = os.path.join(sandbox_dir, source_file_name)
+        temp_test_file = os.path.join(sandbox_dir, test_file_name)
+        
+        print(f"   💾 Creating temporary source file: {source_file_name}")
+        with open(temp_source_file, 'w', encoding='utf-8') as f:
             f.write(fixed_code)
         
-        print(f"   💾 Saved to: {fixed_file_path}")
+        print(f"   💾 Creating unit test file: {test_file_name}")
+        # Update imports in generated tests to match temp file name
+        updated_tests = generated_tests.replace(f"from {base_name} import", f"from {base_name}_temp import")
+        with open(temp_test_file, 'w', encoding='utf-8') as f:
+            f.write(updated_tests)
+        
+        print(f"   ✅ Temporary files created for testing")
         
     except Exception as e:
-        print(f"   ❌ Failed to save file: {e}")
+        print(f"   ❌ Failed to create test files: {e}")
         
         state["is_fixed"] = False
-        state["pytest_report"] = f"File save error: {str(e)}"
-        state["specific_test_failures"] = f"Could not save fixed code: {str(e)}"
+        state["pytest_report"] = f"File creation error: {str(e)}"
+        state["specific_test_failures"] = f"Could not create test files: {str(e)}"
         
         log_experiment(
             agent_name="Judge_Agent",
-            model_used="validation",
+            model_used="file_creation",
             action=ActionType.GENERATION,
             details={
                 "iteration": iteration + 1,
-                "save_error": str(e),
-                "input_prompt": f"Saving fixed code (iteration {iteration + 1})",
+                "file_error": str(e),
+                "input_prompt": f"Creating test files (iteration {iteration + 1})",
                 "output_response": f"ERROR: {str(e)}"
             },
             status="FAILURE"
@@ -192,41 +681,76 @@ def judge_agent(state: dict) -> dict:
         
         return state
     
-    # ===================================================================
-    # STEP 3: EXECUTE UNIT TESTS
-    # ===================================================================
+    # ========================================================================
+    # STEP 4: EXECUTE TESTS
+    # ========================================================================
     try:
-        print(f"   🧪 Running pytest...")
-        pytest_output = run_pytest(fixed_file_path)
-        
-        # Extract specific failures
-        specific_failures = extract_specific_test_failures(pytest_output)
+        print(f"   🧪 Running pytest on generated unit tests...")
+        pytest_output = run_pytest()
         
         # Store in state
         state["pytest_report"] = pytest_output
-        state["specific_test_failures"] = specific_failures
         
-        # ===================================================================
-        # STEP 4: PARSE TEST RESULTS
-        # ===================================================================
+        # ====================================================================
+        # STEP 5: PARSE TEST RESULTS
+        # ====================================================================
         
         passed_count, failed_count, has_tests = parse_pytest_results(pytest_output)
         
         print(f"   📊 Results: {passed_count} passed, {failed_count} failed")
         
+        # ====================================================================
         # SUCCESS: All tests passed
+        # ====================================================================
         if failed_count == 0 and syntax_valid:
             if has_tests:
                 print(f"   ✅ ALL {passed_count} TESTS PASSED!")
+                
+                # Generate success summary with LLM
+                success_summary, summary_prompt, summary_response = generate_success_summary_with_llm(
+                    original_code, 
+                    fixed_code, 
+                    refactoring_plan,
+                    iteration + 1,
+                    file_name
+                )
+                state["success_summary"] = success_summary
+                
+                # ============================================================
+                # Generate and save markdown documentation
+                # ============================================================
+                print("   📄 Generating code documentation...")
+                documentation = generate_documentation_with_llm(fixed_code, file_name)
+                
+                # Create documentation filename (no _fixed suffix)
+                base_name = os.path.splitext(os.path.basename(file_name))[0]
+                doc_filename = os.path.join(sandbox_dir, f"{base_name}_documentation.md")
+                
+                try:
+                    # Write documentation directly
+                    with open(doc_filename, 'w', encoding='utf-8') as f:
+                        f.write(documentation)
+                    
+                    print(f"   ✅ Documentation saved: {os.path.basename(doc_filename)}")
+                    state["documentation_created"] = True
+                    state["documentation_file"] = doc_filename
+                    
+                except Exception as doc_error:
+                    print(f"   ⚠️ Failed to save documentation: {doc_error}")
+                    state["documentation_created"] = False
+                
             else:
                 print(f"   ✅ NO TESTS FOUND, but code is syntactically valid")
+                state["success_summary"] = "No tests found, but code is syntactically valid."
             
+            # Mark as fixed and store final code in STATE only
+            # Main will handle writing the fixed file using write_file() with _fixed suffix
             state["is_fixed"] = True
             state["refactored_code"] = fixed_code
             
             log_experiment(
                 agent_name="Judge_Agent",
-                model_used="validation",
+                model_used="gemini-flash-latest",
                 action=ActionType.GENERATION,
                 details={
                     "iteration": iteration + 1,
@@ -235,6 +759,10 @@ def judge_agent(state: dict) -> dict:
                     "passed_count": passed_count,
                     "failed_count": failed_count,
                     "has_tests": has_tests,
+                    "used_generated_tests": True,
+                    "documentation_created": state.get("documentation_created", False),
+                    "documentation_file": state.get("documentation_file", "N/A"),
+                    "success_summary": success_summary if has_tests else "N/A",
                     "input_prompt": f"Running pytest (iteration {iteration + 1})",
                     "output_response": f"SUCCESS: {passed_count} passed, {failed_count} failed"
                 },
@@ -243,60 +771,132 @@ def judge_agent(state: dict) -> dict:
             
             print(f"\n{'='*60}")
             print(f"🎉 MISSION COMPLETE after {iteration + 1} iteration(s)!")
+            if has_tests and state.get("success_summary"):
+                print(f"   📝 {state['success_summary'][:200]}")
+            if state.get("documentation_created"):
+                print(f"   📄 Documentation: {os.path.basename(state.get('documentation_file', ''))}")
+            print(f"   💾 Final code stored in state - Main will write to file with _fixed suffix")
             print(f"{'='*60}\n")
             
             return state
         
-        # FAILURE: Tests failed - send back to Fixer
+        # ====================================================================
+        # FAILURE: Tests failed - use LLM to analyze
+        # ====================================================================
         else:
             print(f"   ❌ {failed_count} TEST(S) FAILED")
             
-            if specific_failures:
-                print(f"\n   📋 SPECIFIC FAILURES (sending to Fixer):")
+            # Use LLM to analyze failures
+            llm_analysis = analyze_test_failures_with_llm(fixed_code, pytest_output)
+            
+            # Also extract basic failures as fallback
+            basic_failures = extract_specific_test_failures(pytest_output)
+            
+            # Combine LLM analysis with basic extraction
+            if llm_analysis and llm_analysis != basic_failures:
+                specific_failures = f"=== LLM ANALYSIS ===\n{llm_analysis}\n\n=== RAW FAILURES ===\n{basic_failures}"
+            else:
+                specific_failures = basic_failures
+            
+            state["specific_test_failures"] = specific_failures
+            
+            if llm_analysis:
+                print(f"\n   📋 LLM FAILURE ANALYSIS (sending to Fixer):")
                 print(f"   {'-'*50}")
-                for line in specific_failures.split('\n')[:10]:
+                for line in llm_analysis.split('\n')[:15]:
                     if line.strip():
                         print(f"   {line}")
                 print(f"   {'-'*50}\n")
             
             state["is_fixed"] = False
-            state["code"] = fixed_code  # Update code for next iteration
+            state["code"] = fixed_code  # Update for next iteration
+            
+            # Log LLM analysis
+            log_experiment(
+                agent_name="Judge_Agent",
+                model_used="gemini-flash-latest",
+                action=ActionType.ANALYSIS,
+                details={
+                    "iteration": iteration + 1,
+                    "tests_passed": False,
+                    "failed_count": failed_count,
+                    "used_generated_tests": True,
+                    "llm_analysis": llm_analysis[:500] if llm_analysis else "N/A",
+                    "input_prompt": f"Analyzing test failures (iteration {iteration + 1})",
+                    "output_response": llm_analysis[:500] if llm_analysis else "No LLM analysis"
+                },
+                status="PARTIAL"
+            )
     
     except Exception as e:
         print(f"   ❌ Test execution error: {e}")
+        
         pytest_output = f"Test execution failed: {str(e)}"
         specific_failures = f"Test execution error: {str(e)}"
+        
         state["pytest_report"] = pytest_output
         state["specific_test_failures"] = specific_failures
         state["is_fixed"] = False
         state["code"] = fixed_code
     
-    # ===================================================================
-    # STEP 5: LOG FAILURE AND PREPARE FOR NEXT ITERATION
-    # ===================================================================
+    finally:
+        # ====================================================================
+        # CLEANUP: Delete temporary test files
+        # ====================================================================
+        print(f"   🗑️ Cleaning up temporary test files...")
+        
+        cleanup_count = 0
+        
+        # Delete test file
+        if temp_test_file and os.path.exists(temp_test_file):
+            try:
+                os.remove(temp_test_file)
+                print(f"   ✅ Deleted: {os.path.basename(temp_test_file)}")
+                cleanup_count += 1
+            except Exception as cleanup_error:
+                print(f"   ⚠️ Failed to delete {os.path.basename(temp_test_file)}: {cleanup_error}")
+        
+        # Delete source file
+        if temp_source_file and os.path.exists(temp_source_file):
+            try:
+                os.remove(temp_source_file)
+                print(f"   ✅ Deleted: {os.path.basename(temp_source_file)}")
+                cleanup_count += 1
+            except Exception as cleanup_error:
+                print(f"   ⚠️ Failed to delete {os.path.basename(temp_source_file)}: {cleanup_error}")
+        
+        if cleanup_count == 0:
+            print(f"   ℹ️ No temporary files to clean up")
+        else:
+            print(f"   ✅ Cleaned up {cleanup_count} temporary file(s)")
+    
+    # ========================================================================
+    # STEP 6: LOG FAILURE AND PREPARE FOR NEXT ITERATION
+    # ========================================================================
     
     log_experiment(
         agent_name="Judge_Agent",
-        model_used="validation",
+        model_used="gemini-flash-latest",
         action=ActionType.GENERATION,
         details={
             "iteration": iteration + 1,
             "tests_passed": False,
             "syntax_valid": syntax_valid,
-            "pytest_output_preview": pytest_output[:300] if pytest_output else "N/A",
-            "has_specific_failures": bool(specific_failures),
+            "used_generated_tests": True,
+            "pytest_output_preview": pytest_output[:300] if 'pytest_output' in locals() else "N/A",
+            "has_specific_failures": bool(state.get("specific_test_failures")),
             "input_prompt": f"Running pytest (iteration {iteration + 1})",
-            "output_response": pytest_output[:500] if pytest_output else "No output"
+            "output_response": pytest_output[:500] if 'pytest_output' in locals() else "No output"
         },
         status="PARTIAL"
     )
     
     print(f"❌ Tests failed (Iteration {iteration + 1})")
     
-    if iteration + 1 >= state.get("max_iterations", 3):
-        print(f"   🛑 Max iterations ({state.get('max_iterations', 3)}) reached")
-        print("   ⚠️ Mission incomplete - manual review required")
+    if iteration + 1 >= max_iterations:
+        print(f"   🛑 Max iterations ({max_iterations}) reached")
+        print(f"   ⚠️ Mission incomplete - manual review required")
     else:
-        print(f"   🔄 Sending feedback to Fixer (iteration {iteration + 2}/{state.get('max_iterations', 3)})")
+        print(f"   🔄 Sending LLM-analyzed feedback to Fixer (iteration {iteration + 2}/{max_iterations})")
     
     return state
