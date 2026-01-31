@@ -6,7 +6,7 @@ You have access to these Python functions (already implemented):
 - run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings
 - validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)
 
-Note: These tools are for your information only. You analyze the code provided below - you don't need to call these functions.
+Note: These tools are for your information only. You analyze the code provided below - you do not need to call these functions.
 
 YOUR MISSION:
 1. Analyze the provided code for bugs, errors, bad practices, AND LOGIC CORRECTNESS
@@ -21,10 +21,10 @@ CODE TO AUDIT:
 ```
 
 CRITICAL ANALYSIS RULES:
-DO NOT HALLUCINATE - Base your analysis ONLY on the code provided above
-UNDERSTAND THE LOGIC - Read what each function is supposed to do, then verify if it does it correctly
-CHECK EDGE CASES - Test mental execution with: empty inputs, zero, negative numbers, None, empty strings
-TRACE EXECUTION FLOW - Follow the code step-by-step mentally to catch logic bugs
+[RULE 1] DO NOT HALLUCINATE - Base your analysis ONLY on the code provided above
+[RULE 2] UNDERSTAND THE LOGIC - Read what each function is supposed to do, then verify if it does it correctly
+[RULE 3] CHECK EDGE CASES - Test mental execution with: empty inputs, zero, negative numbers, None, empty strings
+[RULE 4] TRACE EXECUTION FLOW - Follow the code step-by-step mentally to catch logic bugs
 
 AUDIT REQUIREMENTS:
 
@@ -54,7 +54,7 @@ AUDIT REQUIREMENTS:
      * Falsy value bugs (if not value: rejecting valid 0, "", False, [])
      * Empty input handling (function assumes non-empty list/string)
 
-3. SYNTAX ERRORS (HIGH PRIORITY - Code won't run):
+3. SYNTAX ERRORS (HIGH PRIORITY - Code will not run):
    - Missing colons after def, if, for, while, class, try, except
    - Incorrect indentation (mixing tabs/spaces, wrong nesting)
    - Unmatched parentheses, brackets, or braces
@@ -80,13 +80,13 @@ For each function, ask yourself:
 Example logic bug detection:
 ```python
 def find_maximum(numbers):
-    max_val = 0  #  BUG: Fails for all-negative lists like [-5, -2, -10]
+    max_val = 0  # [BUG] Fails for all-negative lists like [-5, -2, -10]
     for num in numbers:
         if num > max_val:
             max_val = num
     return max_val
 ```
-→ LOGIC ERROR: Function assumes positive numbers. Should initialize max_val = numbers[0] or float('-inf')
+[ANALYSIS] LOGIC ERROR: Function assumes positive numbers. Should initialize max_val = numbers[0] or float('-inf')
 
 OUTPUT FORMAT:
 
@@ -96,7 +96,7 @@ OUTPUT FORMAT:
   Impact: [Exactly what will break and when]
   Current behavior: [What happens now]
   Expected behavior: [What should happen]
-  Root cause: [Why it's broken]
+  Root cause: [Why it is broken]
   Fix: [Exact code change needed]
 
 ## HIGH PRIORITY ISSUES (Wrong logic - Wrong results)
@@ -130,10 +130,10 @@ ITERATION 3 - DESIGN IMPROVEMENTS (Clean up):
 6. Add error handling for [operation]
 
 IMPORTANT NOTES FOR THE FIXER:
-- Fix issues in the order listed above (critical → logic → design)
+- Fix issues in the order listed above (critical -> logic -> design)
 - Test each fix mentally before applying
 - Preserve original function signatures and behavior for working parts
-- DO NOT over-engineer - only fix what's broken
+- DO NOT over-engineer - only fix what is broken
 
 Be ULTRA-SPECIFIC and ACTIONABLE. The Fixer agent needs EXACT line numbers and EXACT code changes.
 """

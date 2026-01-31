@@ -7,7 +7,7 @@ The testing system uses these functions:
   * Returns detailed error report with test names and failure reasons if tests fail
 - parse_pytest(output): Parses pytest output to extract meaningful error messages
 
-Note: Tests have already been run. You're analyzing the results below.
+Note: Tests have already been run. You are analyzing the results below.
 
 YOUR MISSION:
 Analyze the test results and provide clear, actionable feedback for the next iteration if tests fail.
@@ -21,10 +21,10 @@ CURRENT CODE:
 ```
 
 CRITICAL ANALYSIS RULES:
- PARSE ERRORS CAREFULLY - Extract the exact assertion that failed
- IDENTIFY ROOT CAUSE - Don't just say "test failed", explain WHY
- BE SPECIFIC - Give exact line numbers and function names
- PROVIDE EXAMPLES - Show expected vs actual values clearly
+[RULE 1] PARSE ERRORS CAREFULLY - Extract the exact assertion that failed
+[RULE 2] IDENTIFY ROOT CAUSE - Do not just say "test failed", explain WHY
+[RULE 3] BE SPECIFIC - Give exact line numbers and function names
+[RULE 4] PROVIDE EXAMPLES - Show expected vs actual values clearly
 
 ANALYSIS REQUIREMENTS:
 
@@ -47,18 +47,18 @@ ANALYSIS REQUIREMENTS:
    - MEDIUM: Edge cases not handled (empty list, None input)
 
 4. PROVIDE SPECIFIC GUIDANCE:
-   - Don't say "fix the logic" - say "change line X from Y to Z"
-   - Don't say "handle errors" - say "add if denominator == 0: return None before division"
-   - Don't say "check bounds" - say "add if index >= len(list): return None before list[index]"
+   - Do not say "fix the logic" - say "change line X from Y to Z"
+   - Do not say "handle errors" - say "add if denominator == 0: return None before division"
+   - Do not say "check bounds" - say "add if index >= len(list): return None before list[index]"
 
 ANALYSIS METHODOLOGY:
 
 For each failed test:
-1. Parse the test name → understand what functionality is being tested
-2. Extract the assertion → understand what was expected
-3. Look at the error/failure → understand what actually happened
-4. Trace back to the code → find the exact function and line causing it
-5. Identify the fix → determine the minimal code change needed
+1. Parse the test name -> understand what functionality is being tested
+2. Extract the assertion -> understand what was expected
+3. Look at the error/failure -> understand what actually happened
+4. Trace back to the code -> find the exact function and line causing it
+5. Identify the fix -> determine the minimal code change needed
 
 Example Analysis:
 ```
@@ -79,7 +79,7 @@ OUTPUT FORMAT:
 - Total tests: X
 - Passed: Y
 - Failed: Z
-- Status:  TESTS FAILED (or  ALL TESTS PASSED)
+- Status: [FAILED] TESTS FAILED (or [PASSED] ALL TESTS PASSED)
 
 ## Failed Tests Analysis
 
@@ -93,7 +93,7 @@ OUTPUT FORMAT:
 **Root Cause Analysis:**
 - Function: [name of function in code being tested]
 - Location: Line X in function_name()
-- Problem: [Exact explanation of what's wrong]
+- Problem: [Exact explanation of what is wrong]
 - Why it fails: [Detailed reasoning]
 
 **Required Fix:**
@@ -139,7 +139,7 @@ IMPORTANT NOTES:
 - Show EXACT before/after code snippets
 - Use the same variable names as in the actual code
 - Quote exact error messages from test results
-- Focus on MINIMAL fixes (don't suggest rewriting entire functions)
+- Focus on MINIMAL fixes (do not suggest rewriting entire functions)
 
 Be ULTRA-SPECIFIC and ACTIONABLE. The Auditor needs to know EXACTLY what went wrong and EXACTLY how to fix it.
 """
@@ -160,19 +160,19 @@ Confirm that all tests have passed and provide a summary of the mission success.
 
 OUTPUT FORMAT:
 
-## Mission Status:  COMPLETE
+## Mission Status: [SUCCESS] COMPLETE
 
 ## Test Results Summary
 - Total tests executed: [number from test results]
-- All tests passed:  YES
-- Zero failures:  CONFIRMED
-- Zero errors:  CONFIRMED
+- All tests passed: [CONFIRMED] YES
+- Zero failures: [CONFIRMED] YES
+- Zero errors: [CONFIRMED] YES
 
 ## Validation Checks
- No syntax errors
- No runtime errors  
- All test assertions passed
- Code executes successfully
+[PASSED] No syntax errors
+[PASSED] No runtime errors  
+[PASSED] All test assertions passed
+[PASSED] Code executes successfully
 
 ## Quality Metrics
 - Iterations required to fix: {iteration_count}
