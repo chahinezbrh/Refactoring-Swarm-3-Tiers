@@ -8,7 +8,7 @@ Responsibilities:
 4. Run pytest on unit tests
 5. Use LLM to analyze test failures
 6. Parse test results
-7. Generate markdown documentation when tests pass
+7. Generate markdown documentation when tests pass (FINAL CODE ONLY)
 8. Provide intelligent feedback to Fixer
 9. Store final code in STATE only
 """
@@ -17,6 +17,7 @@ import os
 import sys
 import re
 import ast
+import time
 from langchain_google_genai import ChatGoogleGenerativeAI
 from src.utils.logger import log_experiment, ActionType
 from src.prompts.judge_prompts import JUDGE_VALIDATION_PROMPT, JUDGE_SUCCESS_PROMPT
@@ -27,7 +28,7 @@ from tools import run_pytest, write_file
 
 def generate_unit_tests_with_llm(code: str, file_name: str) -> str:
     """
-    Generate unit tests for code using LLM.
+    Generate unit tests for code using LLM - OPTIMIZED.
     
     Args:
         code: Python code to generate tests for
@@ -36,55 +37,45 @@ def generate_unit_tests_with_llm(code: str, file_name: str) -> str:
     Returns:
         Generated test code as string
     """
+    start_time = time.time()
+    code_lines = len(code.split('\n'))
+    code_chars = len(code)
+    
+    # Dynamic timeout based on code size
+    timeout = max(60, min(180, code_lines // 2))
+    
     print("   🤖 Generating unit tests with LLM...")
+    print(f"   📊 Code: {code_lines} lines, {code_chars} chars")
+    print(f"   ⏱️  Using {timeout}s timeout")
     
     base_name = os.path.splitext(os.path.basename(file_name))[0]
     
-    prompt = f"""You are a Python testing expert. Generate comprehensive pytest unit tests for the following code.
+    # SIMPLIFIED PROMPT for faster processing
+    prompt = f"""Generate pytest tests for this Python code.
 
-CODE TO TEST:
+CODE:
 ```python
 {code}
 ```
 
-REQUIREMENTS:
-1. Create test functions using pytest conventions (test_function_name)
-2. Test ALL functions in the code
-3. Include edge cases: empty inputs, zero values, None, negative numbers
-4. Test expected behavior and error conditions
-5. Use descriptive test names
-6. Import the functions being tested from {base_name}
-7. Use assert statements
-8. Test ALL edge cases thoroughly
+Requirements:
+- Test all functions/methods
+- Import from {base_name}_temp
+- Include edge cases
+- Return only Python code (no markdown)
 
-CRITICAL - OUTPUT FORMAT:
-Return ONLY valid Python code with NO markdown formatting.
-Start with imports, then write test functions.
-Do NOT include ```python or ``` markers.
-
-Example format:
-import pytest
-from {base_name} import function_name
-
-def test_function_basic():
-    assert function_name(args) == expected
-
-def test_function_edge_case():
-    assert function_name(edge_args) == expected
-
-def test_function_empty_input():
-    assert function_name([]) == expected
-
-Generate the tests now:"""
+Tests:"""
 
     llm = ChatGoogleGenerativeAI(
         model="gemini-flash-latest",
-        temperature=0.3,  # Some creativity for test generation
+        temperature=0.3,
         google_api_key=os.getenv("GOOGLE_API_KEY"),
-        max_retries=2
+        max_retries=0,  # No retries for speed
+        timeout=timeout  # Dynamic timeout
     )
     
     try:
+        print(f"   ⏳ Calling Gemini API at {time.strftime('%H:%M:%S')}...")
         response = llm.invoke(prompt)
         
         if isinstance(response.content, list):
@@ -95,7 +86,8 @@ Generate the tests now:"""
         # Clean up any markdown formatting
         test_code = test_code.replace('```python', '').replace('```', '').strip()
         
-        print(f"   ✅ Generated {len(test_code)} characters of test code")
+        elapsed = time.time() - start_time
+        print(f"   ✅ Generated {len(test_code)} chars in {elapsed:.1f}s")
         
         # Log test generation
         log_experiment(
@@ -104,6 +96,10 @@ Generate the tests now:"""
             action=ActionType.GENERATION,
             details={
                 "file_name": file_name,
+                "code_lines": code_lines,
+                "code_chars": code_chars,
+                "timeout_used": timeout,
+                "generation_time": f"{elapsed:.1f}s",
                 "input_prompt": prompt[:500] + "...",
                 "output_response": test_code[:500] + "...",
                 "purpose": "unit_test_generation"
@@ -114,7 +110,8 @@ Generate the tests now:"""
         return test_code
         
     except Exception as e:
-        print(f"   ❌ Test generation failed: {e}")
+        elapsed = time.time() - start_time
+        print(f"   ❌ Test generation failed after {elapsed:.1f}s: {e}")
         
         log_experiment(
             agent_name="Judge_Agent",
@@ -123,6 +120,8 @@ Generate the tests now:"""
             details={
                 "file_name": file_name,
                 "error": str(e),
+                "generation_time": f"{elapsed:.1f}s",
+                "timeout_used": timeout,
                 "input_prompt": prompt[:500] + "...",
                 "output_response": f"ERROR: {str(e)}",
                 "purpose": "unit_test_generation"
@@ -136,17 +135,6 @@ Generate the tests now:"""
 def extract_specific_test_failures(pytest_output: str) -> str:
     """
     Extract key information from pytest failures
-    
-    Pytest output can be 100+ lines. This extracts the most useful parts:
-    - AssertionErrors with expected vs actual
-    - FAILED test lines
-    - Error messages
-    
-    Args:
-        pytest_output: Full pytest output string
-        
-    Returns:
-        Condensed failure information (top 3 failures)
     """
     if not pytest_output or "FAILED" not in pytest_output:
         return ""
@@ -197,12 +185,6 @@ def extract_specific_test_failures(pytest_output: str) -> str:
 def parse_pytest_results(pytest_output: str) -> tuple:
     """
     Parse pytest output to extract pass/fail counts
-    
-    Args:
-        pytest_output: Pytest output string
-        
-    Returns:
-        (passed_count, failed_count, has_tests)
     """
     passed_match = re.search(r'(\d+)\s+passed', pytest_output)
     failed_match = re.search(r'(\d+)\s+failed', pytest_output)
@@ -222,14 +204,7 @@ def parse_pytest_results(pytest_output: str) -> tuple:
 
 def analyze_test_failures_with_llm(fixed_code: str, pytest_output: str) -> str:
     """
-    Use LLM to analyze test failures and provide intelligent feedback
-    
-    Args:
-        fixed_code: The code that was tested
-        pytest_output: Full pytest output
-        
-    Returns:
-        LLM-generated analysis and feedback
+    Use LLM to analyze test failures - OPTIMIZED
     """
     print("   🤖 Using LLM to analyze test failures...")
     
@@ -245,7 +220,8 @@ def analyze_test_failures_with_llm(fixed_code: str, pytest_output: str) -> str:
         model="gemini-flash-latest",
         temperature=0,  # Deterministic analysis
         google_api_key=os.getenv("GOOGLE_API_KEY"),
-        max_retries=1
+        max_retries=0,  # No retries for speed
+        timeout=60      # 60s timeout
     )
     
     try:
@@ -268,19 +244,13 @@ def analyze_test_failures_with_llm(fixed_code: str, pytest_output: str) -> str:
 
 def generate_documentation_with_llm(code: str, file_name: str) -> str:
     """
-    Generate comprehensive markdown documentation for code using LLM.
-    
-    Args:
-        code: Python code to document
-        file_name: Name of the file
-        
-    Returns:
-        Generated markdown documentation as string
+    Generate comprehensive markdown documentation - OPTIMIZED
     """
     print("   📝 Generating markdown documentation...")
     
     base_name = os.path.splitext(os.path.basename(file_name))[0]
     
+    # Enhanced prompt with better structure
     prompt = f"""Generate comprehensive markdown documentation for this Python code.
 
 CODE:
@@ -288,44 +258,62 @@ CODE:
 {code}
 ```
 
-Create a complete documentation in Markdown format with:
+Create a complete .md documentation file with this structure:
 
-# {base_name.title().replace('_', ' ')}
+# {base_name.title().replace('_', ' ')} - Documentation
+
+**Status**: Production Ready - All Tests Passed  
+**File**: `{os.path.basename(file_name)}`
+
+---
 
 ## Overview
-[Brief description of what this code does]
+[Brief description of what this code does - 2-3 sentences]
+
+---
 
 ## Functions
 
-### function_name(parameters)
-**Description:** [What it does]
+For EACH function, provide:
+
+### `function_name(param1, param2, ...)`
+
+**Description:**  
+[What the function does]
 
 **Parameters:**
-- `param_name` (type): Description
+- `param1` (type): Description
+- `param2` (type): Description
 
 **Returns:**
-- type: Description
-
-**Logic:**
-1. Step-by-step explanation of the logic
-2. Any algorithms or patterns used
-3. Edge cases handled
+- Type: Description
 
 **Examples:**
 ```python
-# Usage example
-result = function_name(args)
+>>> function_name(arg1, arg2)
+expected_output
 ```
 
-## Code Structure
-[Explain the overall structure and design decisions]
+**Edge Cases:**
+- What happens with empty inputs
+- What happens with invalid inputs
+- Error handling behavior
 
-## Key Features
-- Feature 1
-- Feature 2
+---
 
-## Technical Details
-[Any important implementation details, performance considerations, or design patterns]
+[Repeat for ALL functions in the code]
+
+---
+
+## Summary
+
+### Functions Included
+- `function1`: Brief description
+- `function2`: Brief description
+[List all functions]
+
+### Testing Status
+✅ All functions tested and validated
 
 Return ONLY the markdown documentation (no code blocks around it):"""
 
@@ -333,7 +321,8 @@ Return ONLY the markdown documentation (no code blocks around it):"""
         model="gemini-flash-latest",
         temperature=0.3,
         google_api_key=os.getenv("GOOGLE_API_KEY"),
-        max_retries=0
+        max_retries=2,  # Increased retries for documentation
+        timeout=90      # Increased timeout for documentation
     )
     
     try:
@@ -370,17 +359,27 @@ Return ONLY the markdown documentation (no code blocks around it):"""
         print(f"   ⚠️ Documentation generation failed: {e}")
         
         # Fallback basic documentation
-        fallback_doc = f"""# {base_name.title().replace('_', ' ')}
+        fallback_doc = f"""# {base_name.title().replace('_', ' ')} - Documentation
+
+**Status**: Production Ready - All Tests Passed  
+**File**: `{os.path.basename(file_name)}`
+
+---
 
 ## Overview
 This file contains Python code that has been successfully refactored and validated.
 
 ## Status
-✅ All tests passing
-✅ Code validated
+✅ All tests passing  
+✅ Code validated  
+✅ Ready for production
 
 ## Note
-Automatic documentation generation failed. Please review the code for detailed information.
+Automatic documentation generation encountered an error. Please review the code for detailed information about the functions.
+
+---
+
+**Documentation Error**: {str(e)}
 """
         
         log_experiment(
@@ -402,17 +401,7 @@ Automatic documentation generation failed. Please review the code for detailed i
 
 def generate_success_summary_with_llm(original_code: str, fixed_code: str, refactoring_plan: str, iteration_count: int, file_name: str = "unknown.py") -> tuple[str, str, str]:
     """
-    Use LLM to generate a summary of what was fixed
-    
-    Args:
-        original_code: Original buggy code
-        fixed_code: Fixed code that passes tests
-        refactoring_plan: The plan that was followed
-        iteration_count: Number of iterations taken
-        file_name: Name of the file being processed
-        
-    Returns:
-        Tuple of (summary, input_prompt, output_response) for logging
+    Generate success summary - OPTIMIZED
     """
     print("   🤖 Generating success summary...")
     
@@ -426,7 +415,8 @@ def generate_success_summary_with_llm(original_code: str, fixed_code: str, refac
         model="gemini-flash-latest",
         temperature=0.3,
         google_api_key=os.getenv("GOOGLE_API_KEY"),
-        max_retries=1
+        max_retries=0,  # No retries
+        timeout=45      # 45s timeout
     )
     
     try:
@@ -480,31 +470,6 @@ def generate_success_summary_with_llm(original_code: str, fixed_code: str, refac
 def judge_agent(state: dict) -> dict:
     """
     JUDGE Agent: Validates fixes and provides LLM-powered feedback
-    
-    Workflow:
-    1. Validate max_iterations parameter
-    2. Validate syntax (compile check)
-    3. ALWAYS generate unit tests with LLM
-    4. Create TEMPORARY files for pytest
-    5. Run pytest on unit tests
-    6. Use LLM to analyze failures
-    7. Parse results
-    8. Store final code in STATE (no file writing)
-    
-    Args:
-        state: Workflow state containing:
-            - fixed_code: Code from Fixer
-            - file_name: Original file name
-            - iteration_count: Current iteration
-            - max_iterations: Maximum allowed iterations (required, must be ≤ 10)
-        
-    Returns:
-        Updated state with:
-            - is_fixed: True if all tests pass
-            - refactored_code: Final code in state (main will write it)
-            - pytest_report: Full test output
-            - specific_test_failures: LLM-analyzed failures for Fixer
-            - iteration_count: Incremented
     """
     print("⚖️ [JUDGE] Validating fixes...")
     
@@ -716,38 +681,95 @@ def judge_agent(state: dict) -> dict:
                 )
                 state["success_summary"] = success_summary
                 
-                # ============================================================
-                # Generate and save markdown documentation
-                # ============================================================
-                print("   📄 Generating code documentation...")
-                documentation = generate_documentation_with_llm(fixed_code, file_name)
-                
-                # Create documentation filename (no _fixed suffix)
-                base_name = os.path.splitext(os.path.basename(file_name))[0]
-                doc_filename = os.path.join(sandbox_dir, f"{base_name}_documentation.md")
-                
-                try:
-                    # Write documentation directly
-                    with open(doc_filename, 'w', encoding='utf-8') as f:
-                        f.write(documentation)
-                    
-                    print(f"   ✅ Documentation saved: {os.path.basename(doc_filename)}")
-                    state["documentation_created"] = True
-                    state["documentation_file"] = doc_filename
-                    
-                except Exception as doc_error:
-                    print(f"   ⚠️ Failed to save documentation: {doc_error}")
-                    state["documentation_created"] = False
-                
             else:
                 print(f"   ✅ NO TESTS FOUND, but code is syntactically valid")
                 state["success_summary"] = "No tests found, but code is syntactically valid."
             
-            # Mark as fixed and store final code in STATE only
-            # Main will handle writing the fixed file using write_file() with _fixed suffix
+            # Mark as fixed and store final code in STATE
             state["is_fixed"] = True
             state["refactored_code"] = fixed_code
             
+            # ============================================================
+            # Generate documentation ONLY for FINAL fixed code - WITH DEBUG
+            # ============================================================
+            if has_tests:
+                print("   📄 Generating code documentation for final fixed code...")
+                print(f"   🔍 DEBUG: has_tests = {has_tests}")
+                print(f"   🔍 DEBUG: About to call generate_documentation_with_llm")
+                
+                documentation = generate_documentation_with_llm(fixed_code, file_name)
+                
+                print(f"   🔍 DEBUG: Documentation returned")
+                print(f"   🔍 DEBUG: documentation is None? {documentation is None}")
+                print(f"   🔍 DEBUG: documentation length: {len(documentation) if documentation else 0}")
+                
+                if not documentation:
+                    print("   ⚠️ Documentation generation returned None or empty")
+                    state["documentation_created"] = False
+                else:
+                    print(f"   🔍 DEBUG: file_name = '{file_name}'")
+                    
+                    # Get the directory where the original file is located
+                    original_file_dir = os.path.dirname(os.path.abspath(file_name))
+                    
+                    print(f"   🔍 DEBUG: original_file_dir = '{original_file_dir}'")
+                    print(f"   🔍 DEBUG: sandbox_dir = '{sandbox_dir}'")
+                    
+                    # If file_name has no directory, use sandbox
+                    if not original_file_dir or original_file_dir == '':
+                        original_file_dir = sandbox_dir
+                        print(f"   ℹ️ No directory in file_name, using sandbox: {sandbox_dir}")
+                    
+                    # Create documentation filename
+                    base_name = os.path.splitext(os.path.basename(file_name))[0]
+                    doc_filename = os.path.join(original_file_dir, f"{base_name}_documentation.md")
+                    
+                    print(f"   📁 Saving documentation to: {doc_filename}")
+                    print(f"   🔍 DEBUG: doc_filename absolute path: {os.path.abspath(doc_filename)}")
+                    
+                    try:
+                        # Ensure directory exists
+                        print(f"   🔍 DEBUG: Creating directory: {original_file_dir}")
+                        os.makedirs(original_file_dir, exist_ok=True)
+                        print(f"   🔍 DEBUG: Directory exists? {os.path.exists(original_file_dir)}")
+                        
+                        # Write documentation
+                        print(f"   🔍 DEBUG: Opening file for writing...")
+                        with open(doc_filename, 'w', encoding='utf-8') as f:
+                            print(f"   🔍 DEBUG: Writing {len(documentation)} chars...")
+                            f.write(documentation)
+                            print(f"   🔍 DEBUG: Write complete")
+                        
+                        print(f"   🔍 DEBUG: File closed, checking existence...")
+                        
+                        # Verify file was created
+                        if os.path.exists(doc_filename):
+                            file_size = os.path.getsize(doc_filename)
+                            print(f"   ✅ Documentation saved: {os.path.basename(doc_filename)} ({file_size} bytes)")
+                            print(f"   🔍 DEBUG: Setting state variables...")
+                            state["documentation_created"] = True
+                            state["documentation_file"] = doc_filename
+                            print(f"   🔍 DEBUG: State updated successfully")
+                        else:
+                            print(f"   ❌ File not found after write!")
+                            print(f"   🔍 DEBUG: Checked path: {doc_filename}")
+                            print(f"   🔍 DEBUG: Directory contents:")
+                            if os.path.exists(original_file_dir):
+                                for item in os.listdir(original_file_dir):
+                                    print(f"   🔍 DEBUG:   - {item}")
+                            state["documentation_created"] = False
+                        
+                    except Exception as doc_error:
+                        print(f"   ❌ Failed to save documentation: {doc_error}")
+                        print(f"   🔍 DEBUG: Exception type: {type(doc_error).__name__}")
+                        import traceback
+                        traceback.print_exc()
+                        state["documentation_created"] = False
+            else:
+                print(f"   ℹ️ Skipping documentation generation")
+                print(f"   🔍 DEBUG: has_tests = {has_tests}")
+            
+            # Log success
             log_experiment(
                 agent_name="Judge_Agent",
                 model_used="gemini-flash-latest",
@@ -775,10 +797,13 @@ def judge_agent(state: dict) -> dict:
                 print(f"   📝 {state['success_summary'][:200]}")
             if state.get("documentation_created"):
                 print(f"   📄 Documentation: {os.path.basename(state.get('documentation_file', ''))}")
+                print(f"   📂 Saved to: {os.path.dirname(state.get('documentation_file', ''))}")
+            else:
+                print(f"   ⚠️ Documentation was not created")
             print(f"   💾 Final code stored in state - Main will write to file with _fixed suffix")
             print(f"{'='*60}\n")
             
-            return state
+            return state  # ← CRITICAL: RETURN HERE!
         
         # ====================================================================
         # FAILURE: Tests failed - use LLM to analyze
@@ -841,7 +866,7 @@ def judge_agent(state: dict) -> dict:
     
     finally:
         # ====================================================================
-        # CLEANUP: Delete temporary test files
+        # CLEANUP: Delete temporary test files AFTER everything is done
         # ====================================================================
         print(f"   🗑️ Cleaning up temporary test files...")
         
