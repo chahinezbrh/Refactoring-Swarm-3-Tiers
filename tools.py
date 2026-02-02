@@ -87,9 +87,8 @@ def run_pylint(filename):
 def run_pytest():
     """Runs pytest on all test files in the sandbox directory."""
     try:
-        # Get the project root (2 levels up from src/utils/)
-        current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(current_file_dir, '../..'))
+        # tools.py is at the project root, so this file's directory IS the project root
+        project_root = os.path.dirname(os.path.abspath(__file__))
         
         # Set up environment to include project root in Python path
         env = os.environ.copy()
@@ -99,23 +98,50 @@ def run_pytest():
         if not os.path.exists(SANDBOX_DIR):
             return f"Error: Sandbox directory '{SANDBOX_DIR}' does not exist."
 
-        # Run pytest
+        # Use sys.executable to ensure we use the venv's Python, not the system one
+        python_executable = sys.executable
+
+        # Verify pytest is actually importable before shelling out
+        try:
+            import pytest  # noqa: F401
+        except ImportError:
+            return (
+                f"Error: pytest is not installed in the current environment.\n"
+                f"Python being used: {python_executable}\n"
+                f"Run: {python_executable} -m pip install pytest"
+            )
+
+        # Run pytest using the correct Python executable
         result = subprocess.run(
-            ["python", "-m", "pytest", SANDBOX_DIR, "-v"],
+            [python_executable, "-m", "pytest", SANDBOX_DIR, "-v"],
             capture_output=True,
             text=True,
             timeout=30,
             env=env
         )
-        
+
+        # Exit code 5 = no tests collected (distinct from 0 = all passed)
+        if result.returncode == 5:
+            return (
+                f"NO TESTS COLLECTED.\n\n"
+                f"stdout:\n{result.stdout}\n\n"
+                f"stderr:\n{result.stderr}"
+            )
+
+        # Always include actual stdout so the Judge can parse real counts
         if result.returncode == 0:
-            return "SUCCESS: All tests passed."
-        else:
-            return parse_pytest(result.stdout)
-            
+            return f"SUCCESS: All tests passed.\n\n{result.stdout}"
+
+        # Combine stdout AND stderr — import errors and collection
+        # failures go to stderr, ignoring it hides the real failure reason
+        return parse_pytest(result.stdout + "\n" + result.stderr)
+
     except subprocess.TimeoutExpired:
         return "Error: Tests timed out (took longer than 30 seconds)."
     except FileNotFoundError:
-        return "Error: Pytest not installed. Run 'pip install pytest' first."
+        return (
+            f"Error: Could not find Python executable at '{sys.executable}'.\n"
+            f"Make sure your virtual environment is activated."
+        )
     except Exception as e:
         return f"Error running Pytest: {str(e)}"
