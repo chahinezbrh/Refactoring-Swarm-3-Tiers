@@ -4,11 +4,11 @@
 from typing import TypedDict, List, Dict, Any
 
 
-class State(TypedDict, total=False):  # ✅ FIX: Added total=False to make all fields optional
+class State(TypedDict, total=False):  # FIX: Added total=False to make all fields optional
     """State passed between agents in the refactoring workflow"""
-    code: str                           # Original buggy code
-    file_name: str                      # File being fixed
-    analysis_result: str                # Output from analysis agent
+    code: str                           
+    file_name: str                      
+    analysis_result: str                
     debug_info: str                     # Output from debug agent
     fixed_code: str                     # Output from fix agent
     is_fixed: bool                      # Whether code passes validation

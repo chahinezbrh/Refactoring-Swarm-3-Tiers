@@ -8,13 +8,17 @@ from src.orchestrator.graph import create_refactoring_graph
 from src.utils.code_validator import SANDBOX_DIR
 import time
 
+# Import write_file from tools
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from tools import write_file
+
 # Load environment variables
 load_dotenv()
 api_key = os.getenv('GOOGLE_API_KEY')
 if api_key:
-    print(f"✅ API Key loaded: {api_key[:20]}...")
+    print(f" API Key loaded: {api_key[:20]}...")
 else:
-    print("❌ ERROR: GOOGLE_API_KEY not found in environment!")
+    print(" ERROR: GOOGLE_API_KEY not found in environment!")
     sys.exit(1)
 
 
@@ -30,14 +34,17 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
         True if file was fixed successfully, False otherwise
     """
     print(f"\n{'='*60}")
-    print(f"📄 Processing: {file_path}")
+    print(f" Processing: {file_path}")
     print(f"{'='*60}")
     
+    # ========================================================================
+    # STEP 1: READ INPUT FILE
+    # ========================================================================
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             buggy_code = f.read()
     except Exception as e:
-        print(f"❌ Error reading file: {e}")
+        print(f" Error reading file: {e}")
         log_experiment(
             agent_name="System",
             model_used="N/A",
@@ -53,7 +60,9 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
         )
         return False
     
-    # Initialize state with all required fields
+    # ========================================================================
+    # STEP 2: INITIALIZE STATE
+    # ========================================================================
     initial_state = {
         "code": buggy_code,
         "file_name": file_path,
@@ -72,12 +81,14 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
         "pattern_detection": ""
     }
     
-    # Create and run the graph
+    # ========================================================================
+    # STEP 3: RUN WORKFLOW
+    # ========================================================================
     graph = create_refactoring_graph()
     
     try:
         # Add delay before starting to avoid rate limits
-        print("⏳ Waiting 2 seconds before processing...")
+        print(" Waiting 2 seconds before processing...")
         time.sleep(2)
         
         final_state = graph.invoke(
@@ -85,64 +96,57 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
             config={"recursion_limit": 50}
         )
         
-        # Check if successful
+        # ====================================================================
+        # STEP 4: CHECK IF SUCCESSFUL
+        # ====================================================================
         if final_state.get('is_fixed', False):
-            base_name = os.path.basename(file_path)
-            name_without_ext = os.path.splitext(base_name)[0]
-            output_filename = f"{name_without_ext}_fixed.py"
-            output_path = os.path.join(SANDBOX_DIR, output_filename)
-            
-            # The file is already saved by judge_agent, just verify
-            if os.path.exists(output_path):
-                print(f"\n✅ SUCCESS! Fixed code saved to: {output_path}")
-                print(f"   Original: {file_path}")
-                print(f"   Fixed: {output_path}")
-                print(f"   Iterations used: {final_state.get('iteration_count', 0)}/{max_iterations}")
+            # ================================================================
+            # STEP 5: WRITE FINAL OUTPUT USING write_file()
+            # write_file() automatically adds "_fixed" to filename
+            # ================================================================
+            try:
+                # Get final code from state
+                final_code = final_state.get('refactored_code', final_state.get('fixed_code', final_state['code']))
                 
-                # Log success
-                log_experiment(
-                    agent_name="System",
-                    model_used="N/A",
-                    action=ActionType.GENERATION,
-                    details={
-                        "event": "FILE_FIXED_SUCCESS",
-                        "file": file_path,
-                        "output_file": output_path,
-                        "iterations": final_state.get('iteration_count', 0),
-                        "input_prompt": f"Processing file: {file_path}",
-                        "output_response": f"Fixed in {final_state.get('iteration_count', 0)} iterations"
-                    },
-                    status="SUCCESS"
-                )
+                # Get just the filename (not full path) for write_file
+                base_filename = os.path.basename(file_path)
                 
-                return True
-            else:
-                print(f"\n⚠️ Code was fixed but file not found at: {output_path}")
-                # Try to save it manually
-                try:
-                    os.makedirs(SANDBOX_DIR, exist_ok=True)
-                    with open(output_path, 'w', encoding='utf-8') as f:
-                        fixed_code = final_state.get('refactored_code', final_state.get('fixed_code', final_state['code']))
-                        f.write(fixed_code)
-                    print(f"   ✅ Manually saved to: {output_path}")
+                # Write using write_file() - it will add "_fixed" automatically
+                result = write_file(base_filename, final_code)
+                
+                # Check if write was successful
+                if "SUCCESS" in result:
+                    # Build the output path (write_file adds _fixed automatically)
+                    name_without_ext = os.path.splitext(base_filename)[0]
+                    output_filename = f"{name_without_ext}_fixed.py"
+                    output_path = os.path.join(SANDBOX_DIR, output_filename)
                     
+                    print(f"\n SUCCESS! Fixed code saved to: {output_path}")
+                    print(f"   Original: {file_path}")
+                    print(f"   Fixed: {output_path}")
+                    print(f"   Iterations used: {final_state.get('iteration_count', 0)}/{max_iterations}")
+                    
+                    # Log success
                     log_experiment(
                         agent_name="System",
                         model_used="N/A",
                         action=ActionType.GENERATION,
                         details={
-                            "event": "FILE_SAVED_MANUALLY",
+                            "event": "FILE_FIXED_SUCCESS",
                             "file": file_path,
                             "output_file": output_path,
-                            "input_prompt": f"Manual save: {file_path}",
-                            "output_response": f"Saved to {output_path}"
+                            "iterations": final_state.get('iteration_count', 0),
+                            "write_result": result,
+                            "input_prompt": f"Processing file: {file_path}",
+                            "output_response": f"Fixed in {final_state.get('iteration_count', 0)} iterations"
                         },
                         status="SUCCESS"
                     )
                     
                     return True
-                except Exception as e:
-                    print(f"   ❌ Failed to save: {e}")
+                else:
+                    # Write failed (security or syntax error)
+                    print(f"\n Failed to save fixed code: {result}")
                     
                     log_experiment(
                         agent_name="System",
@@ -151,17 +155,39 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
                         details={
                             "event": "FILE_SAVE_ERROR",
                             "file": file_path,
-                            "error": str(e),
+                            "error": result,
                             "input_prompt": f"Saving fixed code: {file_path}",
-                            "output_response": f"ERROR: {str(e)}"
+                            "output_response": result
                         },
                         status="FAILURE"
                     )
                     
                     return False
                 
+            except Exception as e:
+                print(f"    Failed to save fixed code: {e}")
+                
+                log_experiment(
+                    agent_name="System",
+                    model_used="N/A",
+                    action=ActionType.GENERATION,
+                    details={
+                        "event": "FILE_SAVE_EXCEPTION",
+                        "file": file_path,
+                        "error": str(e),
+                        "input_prompt": f"Saving fixed code: {file_path}",
+                        "output_response": f"ERROR: {str(e)}"
+                    },
+                    status="FAILURE"
+                )
+                
+                return False
+                
         else:
-            print(f"\n⚠️ Could not fix file after {final_state.get('iteration_count', 0)} iterations")
+            # ================================================================
+            # FAILURE: Could not fix after max iterations
+            # ================================================================
+            print(f"\n Could not fix file after {final_state.get('iteration_count', 0)} iterations")
             messages = final_state.get('messages', [])
             if messages:
                 last_message = messages[-1].get('content', 'Unknown')
@@ -170,7 +196,7 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
             # Show pytest report if available
             pytest_report = final_state.get('pytest_report', '')
             if pytest_report:
-                print(f"\n   📋 Last pytest output:")
+                print(f"\n    Last pytest output:")
                 print(f"   {'-'*50}")
                 for line in pytest_report.split('\n')[:15]:
                     if line.strip():
@@ -197,7 +223,7 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
             return False
             
     except Exception as e:
-        print(f"\n❌ Error processing file: {e}")
+        print(f"\n Error processing file: {e}")
         import traceback
         traceback.print_exc()
         
@@ -238,21 +264,21 @@ def main():
 
     # Validate target directory
     if not os.path.exists(args.target_dir):
-        print(f"❌ Directory not found: {args.target_dir}")
+        print(f" Directory not found: {args.target_dir}")
         sys.exit(1)
 
     print(f"\n{'='*60}")
-    print(f"🚀 REFACTORING SWARM STARTING")
+    print(f" REFACTORING SWARM STARTING")
     print(f"{'='*60}")
-    print(f"📂 Target Directory: {args.target_dir}")
-    print(f"🔄 Max Iterations: {args.max_iterations}")
-    print(f"🤖 Using Model: gemini-flash-latest")
-    print(f"💾 Output Directory: {SANDBOX_DIR}")
+    print(f" Target Directory: {args.target_dir}")
+    print(f" Max Iterations: {args.max_iterations}")
+    print(f" Using Model: gemini-flash-latest")
+    print(f" Output Directory: {SANDBOX_DIR}")
     print(f"{'='*60}\n")
     
     # Create sandbox directory
     os.makedirs(SANDBOX_DIR, exist_ok=True)
-    print(f"✅ Sandbox directory ready: {SANDBOX_DIR}\n")
+    print(f" Sandbox directory ready: {SANDBOX_DIR}\n")
     
     # Log startup
     log_experiment(
@@ -274,10 +300,10 @@ def main():
     target_path = Path(args.target_dir)
     python_files = list(target_path.rglob("*.py"))
     
-    # ✅ FILTER LOGIC:
+    #  FILTER LOGIC:
     # The workflow tests CODE using doctests (via pytest --doctest-modules)
     # We filter out:
-    # 1. Previously generated _fixed.py files
+    # 1. Previously generated _fixed.py files (created by write_file)
     # 2. System __init__.py files
     # 3. External test_*.py files (NOT part of the code to fix)
     #
@@ -289,13 +315,13 @@ def main():
     #   - Syntax validity
     python_files = [
         f for f in python_files 
-        if not str(f).endswith("_fixed.py") 
+        if not str(f).endswith("_fixed.py")
         and not str(f).endswith("__init__.py")
         and not os.path.basename(str(f)).startswith("test_")
     ]
 
     if not python_files:
-        print(f"⚠️ No Python files found in {args.target_dir}")
+        print(f" No Python files found in {args.target_dir}")
         log_experiment(
             agent_name="System",
             model_used="N/A",
@@ -308,10 +334,10 @@ def main():
             },
             status="SUCCESS"
         )
-        print("\n✅ MISSION COMPLETE (No files to process)")
+        print("\n MISSION COMPLETE (No files to process)")
         sys.exit(0)
     
-    print(f"📦 Found {len(python_files)} Python file(s) to process:")
+    print(f" Found {len(python_files)} Python file(s) to process:")
     for i, py_file in enumerate(python_files, 1):
         print(f"   {i}. {py_file.name}")
     print(f"{'='*60}\n")
@@ -322,7 +348,7 @@ def main():
     
     for i, py_file in enumerate(python_files, 1):
         print(f"\n{'='*60}")
-        print(f"📝 File {i}/{len(python_files)}")
+        print(f" File {i}/{len(python_files)}")
         print(f"{'='*60}")
         
         try:
@@ -331,11 +357,11 @@ def main():
             else:
                 failed_files.append(str(py_file))
         except KeyboardInterrupt:
-            print("\n\n⚠️ Process interrupted by user")
+            print("\n\n  Process interrupted by user")
             print(f"Processed {i}/{len(python_files)} files before interruption")
             break
         except Exception as e:
-            print(f"\n❌ Unexpected error processing {py_file}: {e}")
+            print(f"\n Unexpected error processing {py_file}: {e}")
             failed_files.append(str(py_file))
             
             log_experiment(
@@ -354,20 +380,20 @@ def main():
         
         # Add delay between files to avoid API rate limits
         if i < len(python_files):
-            print("\n⏳ Waiting 5 seconds before next file...")
+            print("\n Waiting 5 seconds before next file...")
             time.sleep(5)
     
     # Summary
     print(f"\n{'='*60}")
-    print("📊 FINAL SUMMARY")
+    print(" FINAL SUMMARY")
     print(f"{'='*60}")
     print(f"Total files processed: {len(python_files)}")
-    print(f"✅ Successfully fixed: {fixed_count}")
-    print(f"❌ Failed to fix: {len(failed_files)}")
-    print(f"💾 Fixed files saved to: {SANDBOX_DIR}")
+    print(f" Successfully fixed: {fixed_count}")
+    print(f" Failed to fix: {len(failed_files)}")
+    print(f" Fixed files saved to: {SANDBOX_DIR}")
     
     if failed_files:
-        print(f"\n⚠️ Failed files:")
+        print(f"\n Failed files:")
         for failed in failed_files:
             print(f"   - {failed}")
     
@@ -392,9 +418,9 @@ def main():
         status="SUCCESS"
     )
     
-    print("✅ MISSION COMPLETE")
-    print(f"📋 Logs saved to: logs/experiment_data.json")
-    print(f"📁 Fixed files in: {SANDBOX_DIR}\n")
+    print(" MISSION COMPLETE")
+    print(f" Logs saved to: logs/experiment_data.json")
+    print(f" Fixed files in: {SANDBOX_DIR}\n")
 
 
 if __name__ == "__main__":

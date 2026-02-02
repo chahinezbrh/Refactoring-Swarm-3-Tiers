@@ -49,9 +49,7 @@ def detect_generic_patterns(code: str) -> list:
         if not stripped or stripped.startswith('#'):
             continue
         
-        # ====================================================================
-        # PATTERN 1: Division without zero check
-        # ====================================================================
+        
         if '/' in line and '//' not in line:
             context_start = max(0, i - 5)
             context_end = min(len(lines), i + 2)
@@ -74,9 +72,6 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Add check: if denominator != 0: ... else: return None'
                 })
         
-        # ====================================================================
-        # PATTERN 2: List/array access without bounds check
-        # ====================================================================
         if '[' in line and ']' in line and re.search(r'\w+\[\w+\]', line):
             context_start = max(0, i - 5)
             context_end = min(len(lines), i + 2)
@@ -99,9 +94,7 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Check: if index < len(list): ...'
                 })
         
-        # ====================================================================
-        # PATTERN 3: Dictionary access without key check
-        # ====================================================================
+        
         if re.search(r'\w+\[[\'\"]?\w+[\'\"]?\]', line) and 'list' not in line.lower():
             context_start = max(0, i - 5)
             context_end = min(len(lines), i + 2)
@@ -123,9 +116,7 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Use .get() or check: if key in dict: ...'
                 })
         
-        # ====================================================================
-        # PATTERN 4: Empty collection operations
-        # ====================================================================
+        
         if any(func in line for func in ['sum(', 'max(', 'min(', 'average(']):
             context_start = max(0, i - 5)
             context_end = min(len(lines), i + 2)
@@ -146,9 +137,7 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Check: if not collection: return default_value'
                 })
         
-        # ====================================================================
-        # PATTERN 5: Mutable default argument (Python anti-pattern)
-        # ====================================================================
+        
         if 'def ' in line and '=' in line:
             if any(default in line for default in ['=[]', '={}', '=()', '= []', '= {}', '= ()']):
                 issues.append({
@@ -159,10 +148,7 @@ def detect_generic_patterns(code: str) -> list:
                     'fix': 'Use: def func(arg=None): arg = arg or []'
                 })
         
-        # ====================================================================
-        # PATTERN 6: Infinite loop risk
-        # ====================================================================
-        if 'while True:' in line:
+       
             context_start = i
             context_end = min(len(lines), i + 20)
             context = '\n'.join(lines[context_start:context_end])
@@ -216,11 +202,9 @@ def auditor_agent(state: dict) -> dict:
     iteration = state.get("iteration_count", 0)
     
     if iteration > 0:
-        print(f"   🔄 Re-auditing (iteration {iteration + 1})")
+        print(f"    Re-auditing (iteration {iteration + 1})")
     
-    # ========================================================================
-    # STEP 1: Run Pylint Static Analysis
-    # ========================================================================
+    
     pylint_report = ""
     temp_file = None
     
@@ -231,11 +215,11 @@ def auditor_agent(state: dict) -> dict:
             f.write(buggy_code)
         
         pylint_report = run_pylint(temp_file)
-        print("   ✅ Pylint analysis complete")
+        print("    Pylint analysis complete")
         
     except Exception as e:
         pylint_report = f"Pylint skipped: {str(e)}"
-        print(f"   ⚠️ Pylint skipped: {e}")
+        print(f"    Pylint skipped: {e}")
     finally:
         # Clean up temp file
         if temp_file and os.path.exists(temp_file):
@@ -244,16 +228,14 @@ def auditor_agent(state: dict) -> dict:
             except:
                 pass
     
-    # ========================================================================
-    # STEP 2: Detect Bug Patterns
-    # ========================================================================
-    print("   🔍 Running pattern detection...")
+ 
+    print("    Running pattern detection...")
     pattern_issues = detect_generic_patterns(buggy_code)
     
     # Format pattern issues into readable report
     pattern_report = ""
     if pattern_issues:
-        pattern_report = "\n🎯 PATTERN DETECTION FINDINGS:\n\n"
+        pattern_report = "\n  PATTERN DETECTION FINDINGS:\n\n"
         
         # Group by category
         by_category = {}
@@ -277,11 +259,9 @@ def auditor_agent(state: dict) -> dict:
                     pattern_report += f"           Fix: {fix}\n"
             pattern_report += "\n"
         
-        print(f"   🎯 Found {len(pattern_issues)} pattern issues")
+        print(f"    Found {len(pattern_issues)} pattern issues")
     
-    # ========================================================================
-    # STEP 3: Build Context from Previous Iterations
-    # ========================================================================
+  
     context_parts = []
     
     # Add Pylint findings
@@ -306,9 +286,6 @@ def auditor_agent(state: dict) -> dict:
     # Combine all context
     additional_context = "\n\n".join(context_parts) if context_parts else ""
     
-    # ========================================================================
-    # STEP 4: Generate Refactoring Plan with LLM
-    # ========================================================================
     
     # Build prompt
     if additional_context:
@@ -365,10 +342,10 @@ def auditor_agent(state: dict) -> dict:
             "content": f"Audit complete - {len(pattern_issues)} issues detected"
         })
         
-        print(f"   ✅ Audit complete - refactoring plan generated")
+        print(f"    Audit complete - refactoring plan generated")
         
     except Exception as e:
-        print(f"   ❌ Audit failed: {e}")
+        print(f"    Audit failed: {e}")
         
         log_experiment(
             agent_name="Auditor_Agent",

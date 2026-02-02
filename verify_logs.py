@@ -10,43 +10,43 @@ def verify_logs():
     log_file = Path("logs/experiment_data.json")
     
     print("=" * 60)
-    print("📊 LOG VERIFICATION REPORT")
+    print(" LOG VERIFICATION REPORT")
     print("=" * 60)
     
     # Check 1: Does the logs directory exist?
     if not Path("logs").exists():
-        print("❌ FAIL: logs/ directory does not exist")
+        print(" FAIL: logs/ directory does not exist")
         return False
     else:
-        print("✅ PASS: logs/ directory exists")
+        print(" PASS: logs/ directory exists")
     
     # Check 2: Does the log file exist?
     if not log_file.exists():
-        print("❌ FAIL: logs/experiment_data.json does not exist")
+        print(" FAIL: logs/experiment_data.json does not exist")
         return False
     else:
-        print("✅ PASS: logs/experiment_data.json exists")
+        print(" PASS: logs/experiment_data.json exists")
     
     # Check 3: Is the file readable?
     try:
         with open(log_file, 'r') as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        print(f"❌ FAIL: Log file is corrupted - {e}")
+        print(f" FAIL: Log file is corrupted - {e}")
         return False
     except Exception as e:
-        print(f"❌ FAIL: Cannot read log file - {e}")
+        print(f" FAIL: Cannot read log file - {e}")
         return False
     
-    print("✅ PASS: Log file is readable")
+    print(" PASS: Log file is readable")
     
     # Check 4: Does it have entries?
     if not data:
-        print("⚠️  WARNING: Log file is empty (no experiments logged yet)")
+        print("  WARNING: Log file is empty (no experiments logged yet)")
         return True
     
     num_entries = len(data)
-    print(f"✅ PASS: Found {num_entries} log entries")
+    print(f" PASS: Found {num_entries} log entries")
     
     # Check 5: Verify structure of entries
     # CORRECTED FIELD NAMES - matching your actual log structure
@@ -59,12 +59,12 @@ def verify_logs():
         missing_fields = [field for field in required_fields if field not in entry]
         
         if missing_fields:
-            print(f"❌ Entry {i+1}: Missing fields: {missing_fields}")
+            print(f" Entry {i+1}: Missing fields: {missing_fields}")
             invalid_entries += 1
         else:
             valid_entries += 1
     
-    print(f"\n📈 SUMMARY:")
+    print(f"\n SUMMARY:")
     print(f"   Total entries: {num_entries}")
     print(f"   Valid entries: {valid_entries}")
     print(f"   Invalid entries: {invalid_entries}")
@@ -86,10 +86,10 @@ def verify_logs():
     failure_count = sum(1 for e in data if e.get('status') == 'FAILURE')
     info_count = sum(1 for e in data if e.get('status') == 'INFO')
     
-    print(f"\n📊 STATUS BREAKDOWN:")
-    print(f"   ✅ SUCCESS: {success_count}")
-    print(f"   ❌ FAILURE: {failure_count}")
-    print(f"   ℹ️  INFO: {info_count}")
+    print(f"\n STATUS BREAKDOWN:")
+    print(f"    SUCCESS: {success_count}")
+    print(f"    FAILURE: {failure_count}")
+    print(f"    INFO: {info_count}")
     
     # Check 8: Show agent activity
     agent_stats = {}

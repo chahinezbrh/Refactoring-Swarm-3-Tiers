@@ -28,9 +28,7 @@ def create_refactoring_graph():
     # Initialize the graph
     builder = StateGraph(State)
     
-    # ===================================================================
-    # ADD THE 3 SPECIALIZED AGENTS
-    # ===================================================================
+  
     
     # 1. AUDITOR: Static analysis + refactoring plan
     builder.add_node("auditor", auditor_agent)
@@ -41,24 +39,16 @@ def create_refactoring_graph():
     # 3. JUDGE: Validates with unit tests
     builder.add_node("judge", judge_agent)
     
-    # ===================================================================
-    # DEFINE THE WORKFLOW
-    # ===================================================================
+   
     
-    # Entry point: Start with the Auditor
+    
     builder.set_entry_point("auditor")
     
     # Linear flow: Auditor → Fixer → Judge
     builder.add_edge("auditor", "fixer")
     builder.add_edge("fixer", "judge")
     
-    # ===================================================================
-    # SELF-HEALING LOOP
-    # ===================================================================
-    
-    # Judge makes the decision:
-    # - If tests pass: END (mission complete)
-    # - If tests fail: Back to AUDITOR (self-healing loop)
+   
     builder.add_conditional_edges(
         "judge",              # Source node
         should_continue,      # Routing function
@@ -72,25 +62,4 @@ def create_refactoring_graph():
     return builder.compile()
 
 
-# ===================================================================
-# WORKFLOW VISUALIZATION
-# ===================================================================
-# 
-# Initial iteration:
-#     START → AUDITOR → FIXER → JUDGE → END (if success)
-#                                    ↓
-#                                 (if fail)
-#                                    ↓
-# Self-healing loop:
-#     AUDITOR ← ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
-#        ↓
-#     FIXER → JUDGE → END (if success)
-#                  ↓
-#               (if fail and iterations remain)
-#                  ↓
-#     AUDITOR ← ─ ┘
-# 
-# The loop continues until either:
-# - Judge confirms all tests pass (SUCCESS)
-# - Max iterations reached (PARTIAL SUCCESS / FAILURE)
-# ===================================================================
+

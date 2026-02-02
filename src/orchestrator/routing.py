@@ -25,30 +25,24 @@ def should_continue(state: dict) -> str:
     current_iteration = state.get("iteration_count", 0)
     max_iterations = state.get("max_iterations", 3)
     
-    # ===================================================================
-    # DECISION 1: SUCCESS - Tests passed
-    # ===================================================================
+  
     if state.get("is_fixed", False):
         print(f"\n{'='*70}")
-        print(f"✅ MISSION COMPLETE: All tests passed!")
+        print(f" MISSION COMPLETE: All tests passed!")
         print(f"   Total iterations: {current_iteration}")
         print(f"{'='*70}\n")
         return "end"
     
-    # ===================================================================
-    # DECISION 2: MAX ITERATIONS - Stop and report
-    # ===================================================================
+    
     if current_iteration >= max_iterations:
         print(f"\n{'='*70}")
-        print(f"🛑 MAX ITERATIONS REACHED: {max_iterations}")
+        print(f" MAX ITERATIONS REACHED: {max_iterations}")
         print(f"   Status: Tests still failing")
         print(f"   Action: Manual review required")
         print(f"{'='*70}\n")
         return "end"
     
-    # ===================================================================
-    # DECISION 3: CONTINUE - Self-healing loop
-    # ===================================================================
+    
     print(f"\n{'='*70}")
     print(f"🔄 SELF-HEALING LOOP ACTIVATED")
     print(f"   Current iteration: {current_iteration}")

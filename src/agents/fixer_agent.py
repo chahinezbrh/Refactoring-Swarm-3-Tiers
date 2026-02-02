@@ -171,15 +171,15 @@ def fixer_agent(state: dict) -> dict:
         # Prioritize specific failures
         if specific_failures:
             error_context = specific_failures
-            print(f"   📋 Using specific test failures from Judge")
+            print(f"    Using specific test failures from Judge")
         elif pytest_report and "FAILED" in pytest_report:
             error_context = pytest_report[-800:] if len(pytest_report) > 800 else pytest_report
-            print(f"   📋 Using pytest output from Judge")
+            print(f"    Using pytest output from Judge")
         else:
             error_context = "Tests failed but no specific error details available"
         
         # Build enhanced prompt
-        enhanced_prompt = f"""⚠️ ITERATION {iteration + 1} - TESTS ARE FAILING!
+        enhanced_prompt = f""" ITERATION {iteration + 1} - TESTS ARE FAILING!
 
 The Judge executed tests and they FAILED. You must fix the EXACT issues reported.
 
@@ -222,18 +222,14 @@ Fixed code:"""
         input_prompt = enhanced_prompt
         
     else:
-        # ====================================================================
-        # ITERATION 1: Use refactoring plan from Auditor
-        # ====================================================================
+        
         input_prompt = FIXER_PROMPT.format(
             code=buggy_code,
             refactoring_plan=refactoring_plan
         )
-        print(f"   📋 Using refactoring plan from Auditor")
+        print(f"    Using refactoring plan from Auditor")
     
-    # ========================================================================
-    # STEP 2: Call LLM to Generate Fixed Code
-    # ========================================================================
+    
     
     llm = ChatGoogleGenerativeAI(
         model="gemini-flash-latest",
@@ -243,7 +239,7 @@ Fixed code:"""
     )
     
     try:
-        print("   🤖 Calling LLM to generate fixes...")
+        print("    Calling LLM to generate fixes...")
         response = llm.invoke(input_prompt)
         
         # Handle list or string response
@@ -252,31 +248,26 @@ Fixed code:"""
         else:
             output_response = str(response.content)
         
-        print(f"   📥 Received {len(output_response)} characters from LLM")
+        print(f"    Received {len(output_response)} characters from LLM")
         
-        # ====================================================================
-        # STEP 3: Extract Code from Response
-        # ====================================================================
-        
+      
         fixed_code = extract_code_from_response(output_response)
         
         # Validate extraction
         if len(fixed_code) < 50:
-            print(f"   ⚠️ Code extraction failed - only {len(fixed_code)} chars")
+            print(f"    Code extraction failed - only {len(fixed_code)} chars")
             raise ValueError(f"Code extraction too short: {len(fixed_code)} characters")
         
-        print(f"   ✅ Extracted {len(fixed_code)} characters of code")
+        print(f"    Extracted {len(fixed_code)} characters of code")
         
-        # ====================================================================
-        # STEP 4: Validate Syntax
-        # ====================================================================
+        
         
         validation_passed, validation_error = validate_code_syntax(fixed_code)
         
         if validation_passed:
-            print(f"   ✅ Syntax validation PASSED")
+            print(f"    Syntax validation PASSED")
         else:
-            print(f"   ❌ Syntax validation FAILED: {validation_error}")
+            print(f"   Syntax validation FAILED: {validation_error}")
             
             # Show problematic line if available
             if "Line" in validation_error:
@@ -288,9 +279,7 @@ Fixed code:"""
                 except:
                     pass
         
-        # ====================================================================
-        # STEP 5: Log the Attempt
-        # ====================================================================
+        
         
         log_experiment(
             agent_name="Fixer_Agent",
@@ -309,28 +298,26 @@ Fixed code:"""
             status="SUCCESS" if validation_passed else "PARTIAL"
         )
         
-        # ====================================================================
-        # STEP 6: Update State
-        # ====================================================================
+       
         
         state["fixed_code"] = fixed_code
         
         # Build status message
         status_parts = []
         if validation_passed:
-            status_parts.append("Syntax ✅")
+            status_parts.append("Syntax ")
         else:
-            status_parts.append("Syntax ❌")
+            status_parts.append("Syntax ")
         
         state["messages"].append({
             "role": "fixer",
             "content": f"Iteration {iteration + 1}: {', '.join(status_parts)}"
         })
         
-        print(f"   ✅ Fix attempt complete")
+        print(f"    Fix attempt complete")
         
     except Exception as e:
-        print(f"   ❌ Fixer error: {e}")
+        print(f"    Fixer error: {e}")
         
         log_experiment(
             agent_name="Fixer_Agent",
