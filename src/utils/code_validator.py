@@ -66,6 +66,14 @@ def is_safe_code(code_string):
         'eval', 'exec', 'compile', '__import__', 'open',
         'input', 'breakpoint'
     }
+
+    # Methods that are only dangerous when called on specific modules.
+    # e.g. os.remove() is dangerous, but list.remove() is fine.
+    dangerous_module_methods = {
+        'os':         {'remove', 'rmdir', 'system', 'popen'},
+        'subprocess': {'run', 'call', 'Popen'},
+        'shutil':     {'rmtree'},
+    }
     
     for node in ast.walk(tree):
         # Check for dangerous imports
@@ -84,10 +92,17 @@ def is_safe_code(code_string):
             if isinstance(node.func, ast.Name):
                 if node.func.id in dangerous_functions:
                     return False, f"Forbidden function call: '{node.func.id}()'"
-            # Check for calls like os.remove, subprocess.run, etc.
+
+            # Check for attribute calls like os.remove(), subprocess.run(), etc.
+            # Only block when the caller is a known dangerous module —
+            # this lets list.remove(), dict.pop(), etc. pass through safely.
             elif isinstance(node.func, ast.Attribute):
-                if node.func.attr in ['remove', 'rmdir', 'system', 'popen', 'run', 'call']:
-                    return False, f"Forbidden operation: '.{node.func.attr}()'"
+                if isinstance(node.func.value, ast.Name):
+                    caller = node.func.value.id
+                    method = node.func.attr
+                    if caller in dangerous_module_methods:
+                        if method in dangerous_module_methods[caller]:
+                            return False, f"Forbidden operation: '{caller}.{method}()'"
     
     return True, "Code passes security checks."
 
