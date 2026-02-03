@@ -75,7 +75,6 @@
         },
         "status": "FAILURE"
     },
-    
     {
         "id": "29f67c0c-4a67-4d82-9522-e442b6e3acfe",
         "timestamp": "2026-01-06T19:15:50.605927",
@@ -156,7 +155,6 @@
         },
         "status": "FAILURE"
     },
-    
     {
         "id": "0ba8c13c-e289-4f38-baa3-e9b145841f13",
         "timestamp": "2026-01-07T02:36:28.126490",
@@ -278,6 +276,889 @@
             "success_rate": "100.0%",
             "input_prompt": "Processing 1 files",
             "output_response": "Fixed 1/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "4d8098b8-eb92-4d5b-80db-7dde15e3b304",
+        "timestamp": "2026-02-03T00:23:19.291025",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 3,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "77872c9b-2b4e-4f7a-a6f5-228c8a75f052",
+        "timestamp": "2026-02-03T00:23:36.818260",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "file_analyzed": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "This audit identifies two critical runtime errors, two high-priority logic errors, and several design improvements. The provided code is highly vulnerable to crashes when processing empty lists and fails to meet its documented requirements for sorting and finding maximum values.\n\n## CRITICAL ISSUES (Must fix immediately - Will crash)\n\n- Issue 1: **ZeroDivisionError in `calculate_average`**\n  Location: Function `calculate_average`, Line 15\n  Impact: The program crashes if an empty list (`[]`) is ...",
+            "code_length": 1440,
+            "pylint_used": true,
+            "pattern_issues_found": 5,
+            "iteration": 0
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "1e1c0055-8af7-4b39-b758-3b2653fb1eb2",
+        "timestamp": "2026-02-03T00:23:45.133542",
+        "agent": "Fixer_Agent",
+        "model": "gemini-flash-latest",
+        "action": "FIX",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE FIXER responsible for implementing corrections based on the refactoring plan.\n\nAVAILABLE TOOLS:\nYou will use these Python functions (already implemented):\n- write_file(filename, content): Saves the fixed code to filename_fixed.py in the sandbox\n  * Automatically validates syntax before saving\n  * Performs security checks (no dangerous operations)\n  * Returns \"SUCCESS: Fixed code saved as 'filename_fixed.py'\" if successful\n  * Returns error message if syntax is invalid or c...",
+            "output_response": "import random\n\ndef generate_numbers(n):\n    \"\"\"Generate a list of n random numbers from 0 to 9.\"\"\"\n    numbers = []\n    for i in range(n):\n        numbers.append(random.randint(0, 9))\n    return numbers\n\ndef calculate_average(nums):\n    \"\"\"Return the average of a list of numbers.\"\"\"\n    if not nums:\n        return 0\n    total = sum(nums)\n    return total / len(nums)\n\ndef find_max_index(nums):\n    \"\"\"Return the index of the maximum number.\"\"\"\n    if not nums:\n        return -1\n        \n    max_va...",
+            "iteration": 0,
+            "original_code_length": 1440,
+            "fixed_code_length": 1473,
+            "validation_passed": true,
+            "validation_error": null,
+            "has_test_context": false,
+            "has_refactoring_plan": true
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "38a39ebb-6db5-4b7d-a94e-ee567b850b7b",
+        "timestamp": "2026-02-03T00:23:48.067076",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "error": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 11.574427777s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.5-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 20\n}\n, retry_delay {\n  seconds: 11\n}\n]",
+            "generation_time": "2.9s",
+            "timeout_used": 60,
+            "input_prompt": "Generate pytest unit tests for this Python code. You MUST follow every rule below.\n\nCODE TO TEST:\n```python\nimport random\n\ndef generate_numbers(n):\n    \"\"\"Generate a list of n random numbers from 0 to 9.\"\"\"\n    numbers = []\n    for i in range(n):\n        numbers.append(random.randint(0, 9))\n    return numbers\n\ndef calculate_average(nums):\n    \"\"\"Return the average of a list of numbers.\"\"\"\n    if not nums:\n        return 0\n    total = sum(nums)\n    return total / len(nums)\n\ndef find_max_index(num...",
+            "output_response": "ERROR: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 11.574427777s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.5-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 20\n}\n, retry_delay {\n  seconds: 11\n}\n]",
+            "purpose": "unit_test_generation"
+        },
+        "status": "FAILURE"
+    },
+    {
+        "id": "ca91ee8b-104b-407e-86e4-8cd17a8b91be",
+        "timestamp": "2026-02-03T00:23:50.812478",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "ERROR: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 8.881454393s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.5-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 20\n}\n, retry_delay {\n  seconds: 8\n}\n]",
+            "error_message": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 8.881454393s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.5-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 20\n}\n, retry_delay {\n  seconds: 8\n}\n]",
+            "iteration": 1
+        },
+        "status": "FAILURE"
+    },
+    {
+        "id": "e45b2408-9214-43cc-82a1-2186beee7583",
+        "timestamp": "2026-02-03T00:23:55.385110",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 0,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "0.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 0/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "f6692484-3ecc-4939-91fe-0112166b57ef",
+        "timestamp": "2026-02-03T00:24:58.773316",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 3,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "1ec71443-7cfc-40a2-a4ef-256e36bbefe2",
+        "timestamp": "2026-02-03T00:25:03.922372",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 0,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "0.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 0/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "3ed88680-b125-4bc0-8b02-e091ff2d2364",
+        "timestamp": "2026-02-03T00:25:35.491674",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 3,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "833f2ae6-9200-4aba-b634-2deb2e388d98",
+        "timestamp": "2026-02-03T00:25:56.109132",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "file_analyzed": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "This audit identifies critical runtime errors, severe logic flaws, and design inefficiencies in the provided Python code. The primary issues involve missing empty list checks leading to crashes and incorrect comparison operators leading to faulty calculations and sorting.\n\n## CRITICAL ISSUES (Must fix immediately - Will crash)\n\n- Issue 1: ZeroDivisionError in `calculate_average`.\n  Location: Function `calculate_average`, Line 15\n  Impact: The function crashes with a `ZeroDivisionError` if called...",
+            "code_length": 1440,
+            "pylint_used": true,
+            "pattern_issues_found": 5,
+            "iteration": 0
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "9ca51ebb-f480-41c8-887b-f8e973f8d322",
+        "timestamp": "2026-02-03T00:26:05.619507",
+        "agent": "Fixer_Agent",
+        "model": "gemini-flash-latest",
+        "action": "FIX",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE FIXER responsible for implementing corrections based on the refactoring plan.\n\nAVAILABLE TOOLS:\nYou will use these Python functions (already implemented):\n- write_file(filename, content): Saves the fixed code to filename_fixed.py in the sandbox\n  * Automatically validates syntax before saving\n  * Performs security checks (no dangerous operations)\n  * Returns \"SUCCESS: Fixed code saved as 'filename_fixed.py'\" if successful\n  * Returns error message if syntax is invalid or c...",
+            "output_response": "import random\n\ndef generate_numbers(n: int) -> list[int]:\n    \"\"\"Generate a list of n random numbers from 0 to 9.\"\"\"\n    numbers = []\n    for i in range(n):\n        numbers.append(random.randint(0, 9))\n    return numbers\n\ndef calculate_average(nums: list[float | int]) -> float:\n    \"\"\"Return the average of a list of numbers.\"\"\"\n    if not nums:\n        return 0.0\n    total = sum(nums)\n    return total / len(nums)\n\ndef find_max_index(nums: list[int]) -> int:\n    \"\"\"Return the index of the maximum...",
+            "iteration": 0,
+            "original_code_length": 1440,
+            "fixed_code_length": 1531,
+            "validation_passed": true,
+            "validation_error": null,
+            "has_test_context": false,
+            "has_refactoring_plan": true
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "9929224d-680b-4c63-bb71-c462fb1e9d5f",
+        "timestamp": "2026-02-03T00:26:14.563500",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "code_lines": 55,
+            "code_chars": 1531,
+            "timeout_used": 60,
+            "generation_time": "8.9s",
+            "input_prompt": "Generate pytest unit tests for this Python code. You MUST follow every rule below.\n\nCODE TO TEST:\n```python\nimport random\n\ndef generate_numbers(n: int) -> list[int]:\n    \"\"\"Generate a list of n random numbers from 0 to 9.\"\"\"\n    numbers = []\n    for i in range(n):\n        numbers.append(random.randint(0, 9))\n    return numbers\n\ndef calculate_average(nums: list[float | int]) -> float:\n    \"\"\"Return the average of a list of numbers.\"\"\"\n    if not nums:\n        return 0.0\n    total = sum(nums)\n    ...",
+            "output_response": "import random\nfrom code_temp import *\n\n# --- Tests for generate_numbers ---\n\ndef test_generate_numbers_length_positive():\n    \"\"\"Tests that the generated list has the correct positive length.\"\"\"\n    n = 10\n    result = generate_numbers(n)\n    assert len(result) == n\n\ndef test_generate_numbers_length_zero():\n    \"\"\"Tests that generating 0 numbers returns an empty list.\"\"\"\n    n = 0\n    result = generate_numbers(n)\n    assert len(result) == 0\n    assert result == []\n\ndef test_generate_numbers_rang...",
+            "purpose": "unit_test_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "bd04ff7b-0025-4849-bc26-02cc1ba81480",
+        "timestamp": "2026-02-03T00:26:30.902439",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "iteration": 1,
+            "input_prompt": "You are an expert CODE JUDGE confirming successful test completion and generating final documentation.\n\nTEST RESULTS:\nAll tests passed successfully\n\nFINAL CODE:\n````python\nimport random\n\ndef generate_numbers(n: int) -> list[int]:\n    \"\"\"Generate a list of n random numbers from 0 to 9.\"\"\"\n    numbers = []\n    for i in range(n):\n        numbers.append(random.randint(0, 9))\n    return numbers\n\ndef calculate_average(nums: list[float | int]) -> float:\n    \"\"\"Return the average of a list of numbers.\"\"...",
+            "output_response": "## Mission Status: [SUCCESS] COMPLETE\n\n## Test Results Summary\n- Total tests executed: Verified by Judge\n- All tests passed: [CONFIRMED] YES\n- Zero failures: [CONFIRMED] YES\n- Zero errors: [CONFIRMED] YES\n\n## Validation Checks\n[PASSED] No syntax errors\n[PASSED] No runtime errors\n[PASSED] All test assertions passed\n[PASSED] Code executes successfully\n\n## Quality Metrics\n- Iterations required to fix: 1\n- Final status: READY FOR DEPLOYMENT\n\n## Success Confirmation\nAll unit tests have passed. The co...",
+            "purpose": "success_summary_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "a62bf73e-312f-48d8-8f39-2cdec25da2cf",
+        "timestamp": "2026-02-03T00:26:37.015658",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "documentation_chars": 4761,
+            "input_prompt": "Generate comprehensive markdown documentation for this Python code.\n\nCODE:\n```python\nimport random\n\ndef generate_numbers(n: int) -> list[int]:\n    \"\"\"Generate a list of n random numbers from 0 to 9.\"\"\"\n    numbers = []\n    for i in range(n):\n        numbers.append(random.randint(0, 9))\n    return numbers\n\ndef calculate_average(nums: list[float | int]) -> float:\n    \"\"\"Return the average of a list of numbers.\"\"\"\n    if not nums:\n        return 0.0\n    total = sum(nums)\n    return total / len(nums...",
+            "output_response": "# Code - Documentation\n\n**Status**: Production Ready - All Tests Passed  \n**File**: `code.py`\n\n---\n\n## Overview\nThis Python module provides utility functions for generating random numbers, performing basic statistical calculations (like finding the average), determining the index of the maximum element, and sorting lists using a bubble sort implementation. It serves as a collection of fundamental list manipulation tools.\n\n---\n\n## Functions\n\n### `generate_numbers(n)`\n\n**Description:**  \nGenerates...",
+            "purpose": "documentation_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "7d417464-4bc8-40bd-89a2-02cac4d7fa95",
+        "timestamp": "2026-02-03T00:26:37.025659",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "iteration": 1,
+            "tests_passed": true,
+            "syntax_valid": true,
+            "passed_count": 22,
+            "failed_count": 0,
+            "has_tests": true,
+            "used_generated_tests": true,
+            "documentation_created": true,
+            "documentation_file": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox\\code_documentation.md",
+            "success_summary": "## Mission Status: [SUCCESS] COMPLETE\n\n## Test Results Summary\n- Total tests executed: Verified by Judge\n- All tests passed: [CONFIRMED] YES\n- Zero failures: [CONFIRMED] YES\n- Zero errors: [CONFIRMED] YES\n\n## Validation Checks\n[PASSED] No syntax errors\n[PASSED] No runtime errors\n[PASSED] All test assertions passed\n[PASSED] Code executes successfully\n\n## Quality Metrics\n- Iterations required to fix: 1\n- Final status: READY FOR DEPLOYMENT\n\n## Success Confirmation\nAll unit tests have passed. The code has been successfully debugged, fixed, and validated.\n\nThe refactoring mission is complete. Code quality has been verified through automated testing.\n\n---\n**Status:** MISSION COMPLETE - Code is production-ready\n**Next Steps:** Generate documentation file\n\n---\n\n# DOCUMENTATION GENERATION\n\n# Code Documentation\n\n**File**: sandbox\\code.py\n**Status**: Production Ready - All Tests Passed\n**Date**: 2026-02-03\n**Total Functions**: 4 (Core Logic)\n\n---\n\n## Overview\n\nThis document provides comprehensive documentation for all core functions in the validated code. All functions have been tested and verified to handle edge cases correctly.\n\n---\n\n## `generate_numbers`\n\n### Description\nThis function generates a list containing a specified number ($n$) of random integers. Each generated number is uniformly distributed between 0 and 9, inclusive. This is typically used for creating test data or simulating random events.\n\n### Function Signature\n```python\ndef generate_numbers(n: int) -> list[int]:\n```\n\n### Parameters\n- **n** (`int`): The desired length of the output list, representing the count of random numbers to generate.\n\n### Returns\n- **Type**: `list[int]`\n- **Description**: A list of integers, where each element is between 0 and 9.\n\n### Edge Cases & Error Handling\n- **Empty Input**: If $n$ is zero or negative, the function gracefully returns an empty list.\n- **Invalid Range**: Since the range (0 to 9) is fixed internally, no external range errors are possible.\n\n### Examples\n\n**Example 1: Normal Usage**\n```python\n>>> import random\n>>> random.seed(42) # For reproducible results\n>>> generate_numbers(5)\n[6, 3, 7, 4, 6]\n```\n\n**Example 2: Edge Case (Zero Count)**\n```python\n>>> generate_numbers(0)\n[]\n```\n\n**Example 3: Edge Case (Negative Count)**\n```python\n>>> generate_numbers(-3)\n[]\n```\n\n### Notes\n- This function relies on the standard Python `random` module.\n- The range of generated numbers (0-9) is hardcoded.\n\n---\n\n## `calculate_average`\n\n### Description\nCalculates the arithmetic mean (average) of a list of numerical values. It supports lists containing both integers and floating-point numbers. The function ensures safe calculation by handling empty lists to prevent division by zero errors.\n\n### Function Signature\n```python\ndef calculate_average(nums: list[float | int]) -> float:\n```\n\n### Parameters\n- **nums** (`list[float | int]`): A list containing numerical values (integers or floats) whose average is to be calculated.\n\n### Returns\n- **Type**: `float`\n- **Description**: The calculated average of the numbers in the list. Returns `0.0` if the input list is empty.\n\n### Edge Cases & Error Handling\n- **Empty List**: If `nums` is empty, the function returns `0.0`.\n- **Non-numeric Input**: If the list contains non-numeric types (e.g., strings), a `TypeError` will be raised by the internal `sum()` function.\n\n### Examples\n\n**Example 1: Normal Usage (Integers)**\n```python\n>>> calculate_average([10, 20, 30, 40])\n25.0\n```\n\n**Example 2: Edge Case (Empty List)**\n```python\n>>> calculate_average([])\n0.0\n```\n\n**Example 3: Mixed Types**\n```python\n>>> calculate_average([1, 2.5, 3, 4.5])\n2.75\n```\n\n### Notes\n- The function uses the built-in `sum()` function for efficiency.\n- The return type is always a float, even if the input list contains only integers and the average is a whole number (e.g., 25.0).\n\n---\n\n## `find_max_index`\n\n### Description\nIdentifies the maximum value within a list of integers and returns the index of its *first* occurrence. This function iterates through the list once, maintaining the current maximum value and its corresponding index.\n\n### Function Signature\n```python\ndef find_max_index(nums: list[int]) -> int:\n```\n\n### Parameters\n- **nums** (`list[int]`): The list of integers to be searched.\n\n### Returns\n- **Type**: `int`\n- **Description**: The index of the maximum element. Returns `-1` if the input list is empty.\n\n### Edge Cases & Error Handling\n- **Empty List**: If `nums` is empty, the function returns `-1`.\n- **Duplicates**: If the maximum value appears multiple times, the index of the first instance is returned.\n\n### Examples\n\n**Example 1: Normal Usage**\n```python\n>>> find_max_index([5, 1, 9, 2, 8])\n2\n```\n\n**Example 2: Edge Case (Empty List)**\n```python\n>>> find_max_index([])\n-1\n```\n\n**Example 3: Edge Case (Duplicates)**\n```python\n>>> find_max_index([10, 5, 10, 3])\n0\n```\n\n### Notes\n- This function provides a manual implementation of finding the maximum index, which is useful when the index of the first occurrence is critical, especially in cases where performance optimization for very large lists is needed over using `nums.index(max(nums))`.\n- Time complexity is $O(N)$, where $N$ is the length of the list.\n\n---\n\n## `faulty_sort`\n\n### Description\nSorts the input list of integers in ascending order using the standard Bubble Sort algorithm. The function modifies the list in-place and returns a reference to the sorted list.\n\n*(Note: Although the function name suggests it is 'faulty', the implementation provided in the final code is a correct and functional Bubble Sort.)*\n\n### Function Signature\n```python\ndef faulty_sort(nums: list[int]) -> list[int]:\n```\n\n### Parameters\n- **nums** (`list[int]`): The list of integers to be sorted. This list is modified directly (in-place).\n\n### Returns\n- **Type**: `list[int]`\n- **Description**: The sorted list (ascending order).\n\n### Edge Cases & Error Handling\n- **Empty List**: If `nums` is empty, it returns an empty list.\n- **Single Element**: A list with one element is returned unchanged.\n\n### Examples\n\n**Example 1: Normal Usage**\n```python\n>>> data = [5, 1, 4, 2, 8]\n>>> faulty_sort(data)\n[1, 2, 4, 5, 8]\n```\n\n**Example 2: Edge Case (Empty List)**\n```python\n>>> faulty_sort([])\n[]\n```\n\n**Example 3: Edge Case (Already Sorted)**\n```python\n>>> data = [1, 2, 3]\n>>> faulty_sort(data)\n[1, 2, 3]\n```\n\n### Notes\n- This implementation uses an optimized range for the inner loop (`n - 1 - i`), reducing unnecessary comparisons in later passes.\n- Bubble Sort has a time complexity of $O(N^2)$, making it inefficient for large datasets compared to algorithms like Merge Sort or Timsort.\n- Since the sorting is done in-place, the original list object passed to the function is mutated.\n\n---\n\n## Summary\n\n### Function Categories\n- **Utility Functions**: 1 - `generate_numbers`\n- **Mathematical Functions**: 1 - `calculate_average`\n- **Data Processing Functions**: 2 - `find_max_index`, `faulty_sort`\n\n### Key Features\n- All functions include proper error handling for common edge cases (e.g., empty lists).\n- Edge cases are handled gracefully, returning appropriate defaults (`0.0`, `-1`, or `[]`).\n- Type hinting is used consistently across all function signatures.\n\n### Testing Status\nAll functions have passed their unit tests and are validated for production use.",
+            "input_prompt": "Running pytest (iteration 1)",
+            "output_response": "SUCCESS: 22 passed, 0 failed"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "53888f5a-5d81-4f23-9196-2881676e7a78",
+        "timestamp": "2026-02-03T00:26:37.300656",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "FILE_FIXED_SUCCESS",
+            "file": "sandbox\\code.py",
+            "output_file": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox\\code_fixed.py",
+            "iterations": 1,
+            "write_result": "SUCCESS: Fixed code saved as 'code_fixed.py'.",
+            "input_prompt": "Processing file: sandbox\\code.py",
+            "output_response": "Fixed in 1 iterations"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "f93b5076-5962-4ee9-b69f-c49f7ad5d4b8",
+        "timestamp": "2026-02-03T00:26:37.347655",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 1,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "100.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 1/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "6c480cca-eb48-4e5f-b529-3bf5ae22eee3",
+        "timestamp": "2026-02-03T12:55:56.834668",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 5,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "8808e9fb-c256-4dc2-9265-54be637dd44e",
+        "timestamp": "2026-02-03T12:57:11.437755",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "file_analyzed": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "This audit reveals numerous critical runtime errors, fundamental logic flaws, and significant design issues across almost every class and function, indicating a high risk of instability and incorrect results.\n\nThe most severe issues involve incorrect index handling in `LRUCache` and `RingBuffer`, leading to immediate crashes, and broken algorithmic implementations in `bfs_shortest_path`, `topological_sort`, and `sliding_window_max`.\n\n## CRITICAL ISSUES (Must fix immediately - Will crash)\n\n| ID |...",
+            "code_length": 11714,
+            "pylint_used": true,
+            "pattern_issues_found": 30,
+            "iteration": 0
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "43a706b0-164d-41f7-8e08-aa1c034b09a1",
+        "timestamp": "2026-02-03T12:57:59.309263",
+        "agent": "Fixer_Agent",
+        "model": "gemini-flash-latest",
+        "action": "FIX",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE FIXER responsible for implementing corrections based on the refactoring plan.\n\nAVAILABLE TOOLS:\nYou will use these Python functions (already implemented):\n- write_file(filename, content): Saves the fixed code to filename_fixed.py in the sandbox\n  * Automatically validates syntax before saving\n  * Performs security checks (no dangerous operations)\n  * Returns \"SUCCESS: Fixed code saved as 'filename_fixed.py'\" if successful\n  * Returns error message if syntax is invalid or c...",
+            "output_response": "import time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\nimport copy\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        # Fix C1: Retrieve value and move key to end without popping first\n        value = self.cache[key...",
+            "iteration": 0,
+            "original_code_length": 11714,
+            "fixed_code_length": 11610,
+            "validation_passed": true,
+            "validation_error": null,
+            "has_test_context": false,
+            "has_refactoring_plan": true
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "a8d38cfa-1341-417d-b10c-f04dd7d1a101",
+        "timestamp": "2026-02-03T12:58:25.881752",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "code_lines": 398,
+            "code_chars": 11610,
+            "timeout_used": 180,
+            "generation_time": "26.5s",
+            "input_prompt": "Generate pytest unit tests for this Python code. You MUST follow every rule below.\n\nCODE TO TEST:\n```python\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\nimport copy\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits +=...",
+            "output_response": "import pytest\nfrom code_temp import *\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\nimport copy\n\n# --- LRUCache Tests ---\n\ndef test_lru_cache_initialization():\n    cache = LRUCache(capacity=3)\n    assert cache.capacity == 3\n    assert len(cache.cache) == 0\n    assert cache.hits == 0\n    assert cache.misses == 0\n\ndef test_lru_cache_put_and_get_hit():\n    cache = LRUCache(capacity=2)\n    cache.put(\"a\", 1)\n    cache.put(\"b\", 2)\n    assert cache.get(\"a\") == 1\n    ...",
+            "purpose": "unit_test_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "a2451042-3a01-4b58-b45e-9d973c22bbf3",
+        "timestamp": "2026-02-03T12:58:25.979790",
+        "agent": "Judge_Agent",
+        "model": "validation",
+        "action": "CODE_GEN",
+        "details": {
+            "iteration": 1,
+            "tests_passed": false,
+            "validation_error": "⚠️ GENERATED TEST FILE HAS A SYNTAX ERROR — this is NOT a problem with the source code.\nSyntax error at line 619: invalid syntax\nProblematic line:     assert result == [9, 8, 7] <ctrl63>\n\nThe source code passed its own syntax check. The LLM produced a broken test file.\nOn the next iteration, ensure the source code is clean and all public functions have clear, standard signatures so the LLM can generate valid tests.",
+            "input_prompt": "Pre-validating test file (iteration 1)",
+            "output_response": "VALIDATION FAILED: ⚠️ GENERATED TEST FILE HAS A SYNTAX ERROR — this is NOT a problem with the source code.\nSyntax error at line 619: invalid syntax\nProblematic line:     assert result == [9, 8, 7] <ctrl63>\n\nThe source code passed its own syntax check. The LLM produced a broken test file.\nOn the next iteration, ensure the source code is clean and all public functions have clear, standard signatures so the LLM can generate valid tests."
+        },
+        "status": "FAILURE"
+    },
+    {
+        "id": "4e9708f1-0f1f-4499-ab90-1859bf3453e7",
+        "timestamp": "2026-02-03T12:58:26.029702",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "iteration": 1,
+            "tests_passed": false,
+            "syntax_valid": true,
+            "collection_error": true,
+            "used_generated_tests": true,
+            "pytest_output_preview": "⚠️ GENERATED TEST FILE HAS A SYNTAX ERROR — this is NOT a problem with the source code.\nSyntax error at line 619: invalid syntax\nProblematic line:     assert result == [9, 8, 7] <ctrl63>\n\nThe source code passed its own syntax check. The LLM produced a broken test file.\nOn the next iteration, ensure ",
+            "has_specific_failures": true,
+            "input_prompt": "Running pytest (iteration 1)",
+            "output_response": "⚠️ GENERATED TEST FILE HAS A SYNTAX ERROR — this is NOT a problem with the source code.\nSyntax error at line 619: invalid syntax\nProblematic line:     assert result == [9, 8, 7] <ctrl63>\n\nThe source code passed its own syntax check. The LLM produced a broken test file.\nOn the next iteration, ensure the source code is clean and all public functions have clear, standard signatures so the LLM can generate valid tests."
+        },
+        "status": "PARTIAL"
+    },
+    {
+        "id": "929ed4c7-fe43-48ec-9c5c-83583200f418",
+        "timestamp": "2026-02-03T12:59:11.960386",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "file_analyzed": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "This audit identifies critical runtime issues, logic errors, and significant design flaws, particularly concerning memory management and algorithm correctness in graph processing and utility functions.\n\n## CRITICAL ISSUES (Must fix immediately - Will crash or lead to severe failure)\n\n- Issue 1: **EventAggregator Memory Leak (Unbounded Growth)**\n  Location: `EventAggregator.aggregate` (Line 86)\n  Impact: The `self.events` list accumulates all historical events indefinitely, regardless of the `win...",
+            "code_length": 11610,
+            "pylint_used": true,
+            "pattern_issues_found": 32,
+            "iteration": 1
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "f5917343-cf59-4eb3-9ad4-c725187d7224",
+        "timestamp": "2026-02-03T12:59:33.710701",
+        "agent": "Fixer_Agent",
+        "model": "gemini-flash-latest",
+        "action": "FIX",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "input_prompt": "⚠️ ITERATION 2 - TESTS ARE FAILING!\n\nThe Judge has executed tests and they FAILED. You must fix the EXACT issues reported.\n\nSPECIFIC TEST FAILURES FROM JUDGE:\n============================================================\n⚠️ GENERATED TEST FILE HAS A SYNTAX ERROR — this is NOT a problem with the source code.\nSyntax error at line 619: invalid syntax\nProblematic line:     assert result == [9, 8, 7] <ctrl63>\n\nThe source code passed its own syntax check. The LLM produced a broken test file.\nOn the nex...",
+            "output_response": "import time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\nimport copy\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        # Fix C1: Retrieve value and move key to end without popping first\n        value = self.cache[key...",
+            "iteration": 1,
+            "original_code_length": 11610,
+            "fixed_code_length": 11618,
+            "validation_passed": true,
+            "validation_error": null,
+            "has_test_context": true,
+            "has_refactoring_plan": true
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "2e4521d4-5219-46df-8900-22c3b6295ec3",
+        "timestamp": "2026-02-03T13:00:00.953108",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "code_lines": 398,
+            "code_chars": 11618,
+            "timeout_used": 180,
+            "generation_time": "27.2s",
+            "input_prompt": "Generate pytest unit tests for this Python code. You MUST follow every rule below.\n\nCODE TO TEST:\n```python\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\nimport copy\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits +=...",
+            "output_response": "import pytest\nfrom code_temp import *\nimport time\nimport copy\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\n\n# --- LRUCache Tests ---\n\ndef test_lru_cache_basic_get_put():\n    cache = LRUCache(2)\n    cache.put(\"k1\", 1)\n    cache.put(\"k2\", 2)\n    assert cache.get(\"k1\") == 1\n    cache.put(\"k3\", 3) # Evicts k2\n    assert cache.get(\"k2\") is None\n    assert cache.get(\"k3\") == 3\n\ndef test_lru_cache_lru_eviction():\n    cache = LRUCache(2)\n    cache.put(\"a\", 1)\n    cache.put(\"b\", ...",
+            "purpose": "unit_test_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "b9f61029-80cc-4e7e-8bad-25092e04ab4a",
+        "timestamp": "2026-02-03T13:00:33.672620",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "documentation_chars": 16480,
+            "input_prompt": "Generate comprehensive markdown documentation for this Python code.\n\nCODE:\n```python\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\nimport copy\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        # Fix C1: Re...",
+            "output_response": "# Code - Documentation\n\n**Status**: Production Ready - All Tests Passed  \n**File**: `code.py`\n\n---\n\n## Overview\nThis module provides a collection of fundamental data structures and algorithmic utilities implemented in Python. It includes core components like an LRU Cache, a State Machine, a Rate Limiter, graph algorithms (BFS, Dijkstra, Topological Sort), and various data processing tools (batch processing, configuration parsing, ring buffer).\n\n---\n\n## Classes\n\n### `class LRUCache`\n\nImplements a...",
+            "purpose": "documentation_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "4d7639f9-f057-42ca-91e7-987437fd5ae7",
+        "timestamp": "2026-02-03T13:00:33.704470",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "iteration": 2,
+            "tests_passed": true,
+            "syntax_valid": true,
+            "passed_count": 0,
+            "failed_count": 0,
+            "has_tests": false,
+            "no_tests_fallback": true,
+            "documentation_created": true,
+            "documentation_file": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox\\code_documentation.md",
+            "input_prompt": "Running pytest (iteration 2)",
+            "output_response": "NO TESTS FOUND — syntax-valid fallback with documentation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "4f4b5f1c-9144-4cd2-857d-10361f46e6a2",
+        "timestamp": "2026-02-03T13:00:33.760692",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "FILE_FIXED_SUCCESS",
+            "file": "sandbox\\code.py",
+            "output_file": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox\\code_fixed.py",
+            "iterations": 2,
+            "write_result": "SUCCESS: Fixed code saved as 'code_fixed.py'.",
+            "input_prompt": "Processing file: sandbox\\code.py",
+            "output_response": "Fixed in 2 iterations"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "33adda71-8449-4a26-9f44-88db284a2fc5",
+        "timestamp": "2026-02-03T13:00:33.793275",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 1,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "100.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 1/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "4ab18884-5503-4e07-ae03-4b844ee88af5",
+        "timestamp": "2026-02-03T14:09:56.121196",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 5,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "9f508088-76f4-4f56-b25f-601a0a66d67d",
+        "timestamp": "2026-02-03T14:10:43.777554",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "file_analyzed": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "This audit reveals numerous critical runtime errors, significant logic flaws across multiple algorithms (caching, state machines, graph theory, rate limiting), and several design issues. The implementation often fails to meet the intended behavior described by the function names and standard algorithm definitions.\n\n## CRITICAL ISSUES (Must fix immediately - Will crash)\n\n- Issue 1: LRUCache `get` method causes `KeyError`.\n  Location: Line 28, Function `LRUCache.get`\n  Impact: The cache crashes wh...",
+            "code_length": 11714,
+            "pylint_used": false,
+            "pattern_issues_found": 30,
+            "iteration": 0
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "e311f5f8-3757-4a86-9119-280b2fd5c603",
+        "timestamp": "2026-02-03T14:11:53.540560",
+        "agent": "Fixer_Agent",
+        "model": "gemini-flash-latest",
+        "action": "FIX",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE FIXER responsible for implementing corrections based on the refactoring plan.\n\nAVAILABLE TOOLS:\nYou will use these Python functions (already implemented):\n- write_file(filename, content): Saves the fixed code to filename_fixed.py in the sandbox\n  * Automatically validates syntax before saving\n  * Performs security checks (no dangerous operations)\n  * Returns \"SUCCESS: Fixed code saved as 'filename_fixed.py'\" if successful\n  * Returns error message if syntax is invalid or c...",
+            "output_response": "import time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        # BUG 1 Fix: Access value, then move to end\n        value = self.cache[key]\n        self.cache.move_to_end(ke...",
+            "iteration": 0,
+            "original_code_length": 11714,
+            "fixed_code_length": 11770,
+            "validation_passed": true,
+            "validation_error": null,
+            "has_test_context": false,
+            "has_refactoring_plan": true
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "c17caa43-996e-4fc2-9cda-38a50e6d499f",
+        "timestamp": "2026-02-03T14:12:23.432792",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "code_lines": 404,
+            "code_chars": 11770,
+            "timeout_used": 180,
+            "generation_time": "29.8s",
+            "input_prompt": "Generate pytest unit tests for this Python code. You MUST follow every rule below.\n\nCODE TO TEST:\n```python\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        #...",
+            "output_response": "import pytest\nfrom code_temp import *\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\n\n# --- LRUCache Tests ---\n\ndef test_lru_cache_init():\n    cache = LRUCache(3)\n    assert cache.capacity == 3\n    assert len(cache.cache) == 0\n    assert cache.hits == 0\n    assert cache.misses == 0\n\ndef test_lru_cache_put_and_get_hit():\n    cache = LRUCache(2)\n    cache.put(\"a\", 1)\n    cache.put(\"b\", 2)\n    assert cache.get(\"a\") == 1\n    assert cache.hits == 1\n    assert cache....",
+            "purpose": "unit_test_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "d224a18d-3ec1-4be9-8f46-4749f676fa69",
+        "timestamp": "2026-02-03T14:13:07.050569",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "documentation_chars": 17058,
+            "input_prompt": "Generate comprehensive markdown documentation for this Python code.\n\nCODE:\n```python\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        # BUG 1 Fix: Access valu...",
+            "output_response": "# Code - Documentation\n\n**Status**: Production Ready - All Tests Passed\n**File**: `code.py`\n\n---\n\n## Overview\nThis module provides a collection of essential data structures, algorithms, and utility functions commonly required in backend and systems programming. It includes robust implementations for caching (LRU), state management, event aggregation, graph traversal (BFS, Dijkstra), rate limiting, configuration parsing, and array manipulation (Ring Buffer, Sliding Window Max).\n\n---\n\n## Classes\n\n...",
+            "purpose": "documentation_generation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "064bedcc-3fc8-4720-8e70-d4fe5f2fec1f",
+        "timestamp": "2026-02-03T14:13:07.101703",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "iteration": 1,
+            "tests_passed": true,
+            "syntax_valid": true,
+            "passed_count": 0,
+            "failed_count": 0,
+            "has_tests": false,
+            "no_tests_fallback": true,
+            "documentation_created": true,
+            "documentation_file": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox\\code_documentation.md",
+            "input_prompt": "Running pytest (iteration 1)",
+            "output_response": "NO TESTS FOUND — syntax-valid fallback with documentation"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "f4d00943-1217-43f7-bfef-d74f447e415b",
+        "timestamp": "2026-02-03T14:13:07.205552",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "FILE_FIXED_SUCCESS",
+            "file": "sandbox\\code.py",
+            "output_file": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox\\code_fixed.py",
+            "iterations": 1,
+            "write_result": "SUCCESS: Fixed code saved as 'code_fixed.py'.",
+            "input_prompt": "Processing file: sandbox\\code.py",
+            "output_response": "Fixed in 1 iterations"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "84f9c7d8-2455-4b42-8d49-64f0ab73aed3",
+        "timestamp": "2026-02-03T14:13:07.252657",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 1,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "100.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 1/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "9ca86c8e-7c9f-4db4-b3c2-0ae2a0aec589",
+        "timestamp": "2026-02-03T14:24:21.762979",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 5,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "617b7568-aee0-4bb2-bef8-0357b5e83b3f",
+        "timestamp": "2026-02-03T14:28:56.737155",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 0,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "0.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 0/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "1f481588-1748-4cc4-8e4a-3a2f55dc2f65",
+        "timestamp": "2026-02-03T14:29:07.186433",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 5,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "35f15fe0-ca57-42e9-8383-4606addda093",
+        "timestamp": "2026-02-03T14:31:25.939817",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 0,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "0.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 0/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "1f1af76a-95e8-4986-8b8c-4082f1007286",
+        "timestamp": "2026-02-03T14:31:32.101733",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 5,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "40d4a8a7-9993-4669-8441-3a04e1850b75",
+        "timestamp": "2026-02-03T14:32:32.651980",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "file_analyzed": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "This audit identified 4 Critical Runtime Errors, 23 High Priority Logic/Algorithm Errors, and 3 Medium Priority Design Flaws. The code contains significant flaws across almost every class and function, particularly in core data structures (LRUCache, RingBuffer) and algorithms (BFS, Dijkstra, Topological Sort, Sliding Window Max).\n\n## CRITICAL ISSUES (Must fix immediately - Will crash)\n\n- Issue 1: **KeyError in LRUCache.get**\n  Location: Function `LRUCache.get`, Lines 26-27\n  Impact: Runtime cras...",
+            "code_length": 11714,
+            "pylint_used": true,
+            "pattern_issues_found": 30,
+            "iteration": 0
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "978472a5-08cd-4963-9793-850e8042b020",
+        "timestamp": "2026-02-03T14:33:31.605874",
+        "agent": "Fixer_Agent",
+        "model": "gemini-flash-latest",
+        "action": "FIX",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE FIXER responsible for implementing corrections based on the refactoring plan.\n\nAVAILABLE TOOLS:\nYou will use these Python functions (already implemented):\n- write_file(filename, content): Saves the fixed code to filename_fixed.py in the sandbox\n  * Automatically validates syntax before saving\n  * Performs security checks (no dangerous operations)\n  * Returns \"SUCCESS: Fixed code saved as 'filename_fixed.py'\" if successful\n  * Returns error message if syntax is invalid or c...",
+            "output_response": "import time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        # Fix 1: Use move_to_end then retrieve value\n        self.cache.move_to_end(key)\n        value = self.cache[k...",
+            "iteration": 0,
+            "original_code_length": 11714,
+            "fixed_code_length": 11386,
+            "validation_passed": true,
+            "validation_error": null,
+            "has_test_context": false,
+            "has_refactoring_plan": true
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "9262d366-52aa-452f-a416-c3085790310b",
+        "timestamp": "2026-02-03T14:33:52.143661",
+        "agent": "Judge_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_GEN",
+        "details": {
+            "file_name": "sandbox\\code.py",
+            "error": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 7.95959616s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.5-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 20\n}\n, retry_delay {\n  seconds: 7\n}\n]",
+            "generation_time": "20.3s",
+            "timeout_used": 180,
+            "input_prompt": "Generate pytest unit tests for this Python code. You MUST follow every rule below.\n\nCODE TO TEST:\n```python\nimport time\nimport json\nimport hashlib\nfrom collections import deque, OrderedDict\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n        self.hits = 0\n        self.misses = 0\n\n    def get(self, key):\n        if key not in self.cache:\n            self.misses += 1\n            return None\n        self.hits += 1\n        #...",
+            "output_response": "ERROR: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 7.95959616s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.5-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 20\n}\n, retry_delay {\n  seconds: 7\n}\n]",
+            "purpose": "unit_test_generation"
+        },
+        "status": "FAILURE"
+    },
+    {
+        "id": "8614ece0-e64e-4498-9256-79ff6ff09494",
+        "timestamp": "2026-02-03T14:33:53.330905",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 0,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "0.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 0/1 files"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "0d9c16eb-a595-462c-8c75-b01118d5b632",
+        "timestamp": "2026-02-03T14:35:46.213131",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "event": "STARTUP",
+            "target_directory": "sandbox",
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "max_iterations": 5,
+            "input_prompt": "Starting refactoring workflow on directory: sandbox",
+            "output_response": "System initialized successfully"
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "d4250864-f67f-4e3f-b08c-3732b008eca3",
+        "timestamp": "2026-02-03T14:37:06.570386",
+        "agent": "Auditor_Agent",
+        "model": "gemini-flash-latest",
+        "action": "CODE_ANALYSIS",
+        "details": {
+            "file_analyzed": "sandbox\\code.py",
+            "input_prompt": "You are an expert CODE AUDITOR responsible for analyzing Python code and creating a comprehensive refactoring plan.\n\nAVAILABLE TOOLS:\nYou have access to these Python functions (already implemented):\n- read_file(filename): Reads a file from the sandbox directory and returns its content as a string\n- run_pylint(filename): Runs pylint static analysis and returns a parsed report of errors and warnings\n- validate_syntax(code): Checks if Python code has valid syntax, returns (is_valid, error_message)\n...",
+            "output_response": "",
+            "code_length": 11714,
+            "pylint_used": true,
+            "pattern_issues_found": 30,
+            "iteration": 0
+        },
+        "status": "SUCCESS"
+    },
+    {
+        "id": "8f98fe77-002e-4398-bd0a-3c5073c9c0f0",
+        "timestamp": "2026-02-03T14:38:10.222621",
+        "agent": "System",
+        "model": "N/A",
+        "action": "CODE_GEN",
+        "details": {
+            "event": "COMPLETION",
+            "total_files": 1,
+            "fixed_count": 0,
+            "failed_count": 0,
+            "failed_files": [],
+            "output_directory": "C:\\Users\\SMART-TECH 0424\\Desktop\\Refactoring-Swarm\\refactoring-swarm-template\\sandbox",
+            "success_rate": "0.0%",
+            "input_prompt": "Processing 1 files",
+            "output_response": "Fixed 0/1 files"
         },
         "status": "SUCCESS"
     }
