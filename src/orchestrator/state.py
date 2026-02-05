@@ -12,7 +12,7 @@ class State(TypedDict, total=False):  # FIX: Added total=False to make all field
     debug_info: str                     # Output from debug agent
     fixed_code: str                     # Output from fix agent
     is_fixed: bool                      # Whether code passes validation
-    iteration_count: int                # Current iteration number
+    iteration_count: int                # Current iteration number 
     max_iterations: int                 # Maximum allowed iterations
     messages: List[Dict[str, str]]      # Message history
     refactored_code: str                # Refactored code output
@@ -21,6 +21,10 @@ class State(TypedDict, total=False):  # FIX: Added total=False to make all field
     refactoring_plan: str
     specific_test_failures: str
     pattern_detection: str
+    success_summary: str                # ← ADD THIS
+    documentation_created: bool         # ← ADD THIS
+    documentation_file: str 
+  
 
 
 
