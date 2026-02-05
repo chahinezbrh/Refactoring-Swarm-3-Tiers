@@ -92,7 +92,7 @@ def run_pytest():
         
         # Set up environment to include project root in Python path
         env = os.environ.copy()
-        env["PYTHONPATH"] = project_root + os.pathsep + env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = project_root + os.pathsep + SANDBOX_DIR + os.pathsep + env.get("PYTHONPATH", "")
 
         # Check if sandbox directory exists
         if not os.path.exists(SANDBOX_DIR):

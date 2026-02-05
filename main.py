@@ -16,19 +16,19 @@ from tools import write_file
 load_dotenv()
 api_key = os.getenv('GOOGLE_API_KEY')
 if api_key:
-    print(f" API Key loaded: {api_key[:20]}...")
+    print(f"✅ API Key loaded: {api_key[:20]}...")
 else:
-    print(" ERROR: GOOGLE_API_KEY not found in environment!")
+    print("❌ ERROR: GOOGLE_API_KEY not found in environment!")
     sys.exit(1)
 
 
-def process_file(file_path: str, max_iterations: int = 3) -> bool:
+def process_file(file_path: str, max_iterations: int = 10) -> bool:
     """
     Process a single Python file through the refactoring workflow
     
     Args:
         file_path: Path to the Python file to fix
-        max_iterations: Maximum number of fix attempts (default: 3)
+        max_iterations: Maximum number of fix attempts (default: 10, max: 10)
     
     Returns:
         True if file was fixed successfully, False otherwise
@@ -136,6 +136,7 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
                             "file": file_path,
                             "output_file": output_path,
                             "iterations": final_state.get('iteration_count', 0),
+                            "max_iterations": max_iterations,
                             "write_result": result,
                             "input_prompt": f"Processing file: {file_path}",
                             "output_response": f"Fixed in {final_state.get('iteration_count', 0)} iterations"
@@ -165,7 +166,7 @@ def process_file(file_path: str, max_iterations: int = 3) -> bool:
                     return False
                 
             except Exception as e:
-                print(f"    Failed to save fixed code: {e}")
+                print(f"     Failed to save fixed code: {e}")
                 
                 log_experiment(
                     agent_name="System",
@@ -257,10 +258,24 @@ def main():
     parser.add_argument(
         "--max_iterations", 
         type=int, 
-        default=3,
-        help="Maximum fix attempts per file (default: 3)"
+        default=10,
+        help="Maximum fix attempts per file (default: 10, max: 10)"
     )
     args = parser.parse_args()
+
+    # ========================================================================
+    # VALIDATE PARAMETERS
+    # ========================================================================
+    
+    # Validate max_iterations parameter
+    if args.max_iterations < 1:
+        print(f" ERROR: max_iterations must be at least 1 (got {args.max_iterations})")
+        sys.exit(1)
+    
+    if args.max_iterations > 10:
+        print(f" WARNING: max_iterations cannot exceed 10 (got {args.max_iterations})")
+        print(f"   Setting max_iterations to 10")
+        args.max_iterations = 10
 
     # Validate target directory
     if not os.path.exists(args.target_dir):
@@ -300,7 +315,8 @@ def main():
     target_path = Path(args.target_dir)
     python_files = list(target_path.rglob("*.py"))
     
-    #  FILTER LOGIC:
+    # ========================================================================
+    # FILTER LOGIC:
     # The workflow tests CODE using doctests (via pytest --doctest-modules)
     # We filter out:
     # 1. Previously generated _fixed.py files (created by write_file)
@@ -313,6 +329,7 @@ def main():
     #   - Doctests in docstrings
     #   - Basic Python assertions
     #   - Syntax validity
+    # ========================================================================
     python_files = [
         f for f in python_files 
         if not str(f).endswith("_fixed.py")
@@ -385,7 +402,7 @@ def main():
     
     # Summary
     print(f"\n{'='*60}")
-    print(" FINAL SUMMARY")
+    print("📊 FINAL SUMMARY")
     print(f"{'='*60}")
     print(f"Total files processed: {len(python_files)}")
     print(f" Successfully fixed: {fixed_count}")
@@ -411,6 +428,7 @@ def main():
             "failed_count": len(failed_files),
             "failed_files": failed_files,
             "output_directory": SANDBOX_DIR,
+            "max_iterations": args.max_iterations,
             "success_rate": f"{(fixed_count/len(python_files)*100):.1f}%" if python_files else "N/A",
             "input_prompt": f"Processing {len(python_files)} files",
             "output_response": f"Fixed {fixed_count}/{len(python_files)} files"

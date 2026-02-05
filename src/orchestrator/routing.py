@@ -1,4 +1,3 @@
-
 # src/orchestrator/routing.py
 # Routing logic for the 3-agent self-healing workflow
 
@@ -10,9 +9,10 @@ def should_continue(state: dict) -> str:
     """
     Determine whether to continue the self-healing loop or end the mission
     
-    This function is called by the Judge after test execution to decide:
-    - Continue: Send back to Auditor with test failure feedback
-    - End: Mission complete (success) or max iterations reached
+    REQUIREMENTS:
+    1. ALWAYS stop when is_fixed=True (file is fixed, tests passed)
+    2. ALWAYS stop when iteration_count >= max_iterations (cannot iterate again)
+    3. Continue otherwise (more iterations available)
     
     Args:
         state: Current workflow state with test results
@@ -23,26 +23,32 @@ def should_continue(state: dict) -> str:
     """
     # Get current iteration count
     current_iteration = state.get("iteration_count", 0)
-    max_iterations = state.get("max_iterations", 3)
+    max_iterations = state.get("max_iterations", 10)
     
-  
+    # ================================================================
+    # RULE 1: If tests passed, STOP immediately (SUCCESS)
+    # ================================================================
     if state.get("is_fixed", False):
         print(f"\n{'='*70}")
-        print(f" MISSION COMPLETE: All tests passed!")
+        print(f"🎉 MISSION COMPLETE: All tests passed!")
         print(f"   Total iterations: {current_iteration}")
         print(f"{'='*70}\n")
         return "end"
     
-    
+    # ================================================================
+    # RULE 2: If max iterations reached, STOP (cannot iterate again)
+    # ================================================================
     if current_iteration >= max_iterations:
         print(f"\n{'='*70}")
-        print(f" MAX ITERATIONS REACHED: {max_iterations}")
+        print(f"⚠️ MAX ITERATIONS REACHED: {max_iterations}")
         print(f"   Status: Tests still failing")
-        print(f"   Action: Manual review required")
+        print(f"   Action: Cannot iterate again - manual review required")
         print(f"{'='*70}\n")
         return "end"
     
-    
+    # ================================================================
+    # RULE 3: Continue to next iteration (more attempts available)
+    # ================================================================
     print(f"\n{'='*70}")
     print(f"🔄 SELF-HEALING LOOP ACTIVATED")
     print(f"   Current iteration: {current_iteration}")
@@ -78,7 +84,7 @@ def get_workflow_status(state: dict) -> dict:
     """
     return {
         "iteration": state.get("iteration_count", 0),
-        "max_iterations": state.get("max_iterations", 3),
+        "max_iterations": state.get("max_iterations", 10),
         "is_fixed": state.get("is_fixed", False),
         "has_test_failures": bool(state.get("specific_test_failures")),
         "pytest_report_available": bool(state.get("pytest_report")),

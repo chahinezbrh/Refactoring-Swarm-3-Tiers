@@ -21,8 +21,8 @@ class State(TypedDict, total=False):  # FIX: Added total=False to make all field
     refactoring_plan: str
     specific_test_failures: str
     pattern_detection: str
-    success_summary: str                # ← ADD THIS
-    documentation_created: bool         # ← ADD THIS
+    success_summary: str                
+    documentation_created: bool         
     documentation_file: str 
   
 
@@ -30,3 +30,5 @@ class State(TypedDict, total=False):  # FIX: Added total=False to make all field
 
 
       
+     
+#

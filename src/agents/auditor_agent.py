@@ -316,7 +316,7 @@ def auditor_agent(state: dict) -> dict:
             refactoring_plan += pattern_report + "\n\n"
         refactoring_plan += "REFACTORING PLAN:\n" + output_response
         
-        # Log the audit
+        # Log the audit - FIXED: Use ActionType.ANALYSIS (agent reads code to understand it)
         log_experiment(
             agent_name="Auditor_Agent",
             model_used="gemini-flash-latest",
@@ -347,6 +347,7 @@ def auditor_agent(state: dict) -> dict:
     except Exception as e:
         print(f"    Audit failed: {e}")
         
+        # Log failure - FIXED: Use ActionType.ANALYSIS
         log_experiment(
             agent_name="Auditor_Agent",
             model_used="gemini-flash-latest",

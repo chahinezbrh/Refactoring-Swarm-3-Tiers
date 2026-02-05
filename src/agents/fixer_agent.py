@@ -277,13 +277,13 @@ Fixed code:"""
                 print(f"   ⚠️ Will send to Judge for validation and retry if needed")
         
         # ===================================================================
-        # STEP 5: Log the Fix Attempt
+        # STEP 5: Log the Fix Attempt - FIXED: Use ActionType.FIX
         # ===================================================================
         
         log_experiment(
             agent_name="Fixer_Agent",
             model_used="gemini-flash-latest",
-            action=ActionType.FIX,
+            action=ActionType.FIX,  # FIXED: Agent rewrites code to fix bugs
             details={
                 "file_name": file_name,
                 "input_prompt": input_prompt[:500] + "..." if len(input_prompt) > 500 else input_prompt,
@@ -314,7 +314,7 @@ Fixed code:"""
     except Exception as e:
         print(f"   ❌ Fixer error: {e}")
         
-        # Log the failure
+        # Log the failure - FIXED: Use ActionType.FIX
         log_experiment(
             agent_name="Fixer_Agent",
             model_used="gemini-flash-latest",

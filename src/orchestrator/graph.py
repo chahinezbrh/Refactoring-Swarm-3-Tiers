@@ -20,7 +20,11 @@ def create_refactoring_graph():
        - If successful: Confirms mission end
     
     Workflow:
-    AUDITOR → FIXER → JUDGE → (if failed) AUDITOR → ... → (if success) END
+    AUDITOR → FIXER → JUDGE → (decision) 
+                                  ↓
+                        if is_fixed=True → END (SUCCESS)
+                        if iteration >= max → END (FAILURE)
+                        else → AUDITOR (LOOP)
     
     Returns:
         Compiled graph ready for execution
@@ -28,7 +32,9 @@ def create_refactoring_graph():
     # Initialize the graph
     builder = StateGraph(State)
     
-  
+    # ===================================================================
+    # ADD NODES
+    # ===================================================================
     
     # 1. AUDITOR: Static analysis + refactoring plan
     builder.add_node("auditor", auditor_agent)
@@ -39,16 +45,22 @@ def create_refactoring_graph():
     # 3. JUDGE: Validates with unit tests
     builder.add_node("judge", judge_agent)
     
-   
-    
-    
+    # ===================================================================
+    # SET ENTRY POINT
+    # ===================================================================
     builder.set_entry_point("auditor")
+    
+    # ===================================================================
+    # ADD EDGES
+    # ===================================================================
     
     # Linear flow: Auditor → Fixer → Judge
     builder.add_edge("auditor", "fixer")
     builder.add_edge("fixer", "judge")
     
-   
+    # Conditional edge from Judge (routing.should_continue decides):
+    # - "end" → END (if is_fixed=True OR iteration_count >= max_iterations)
+    # - "auditor" → Loop back to Auditor (if more iterations available)
     builder.add_conditional_edges(
         "judge",              # Source node
         should_continue,      # Routing function
@@ -60,6 +72,3 @@ def create_refactoring_graph():
     
     # Compile and return the graph
     return builder.compile()
-
-
-
