@@ -22,7 +22,7 @@ else:
     sys.exit(1)
 
 
-def process_file(file_path: str, max_iterations: int = 10) -> bool:
+def process_file(file_path: str, max_iterations: int = 20) -> bool:
     """
     Process a single Python file through the refactoring workflow
     
@@ -43,6 +43,7 @@ def process_file(file_path: str, max_iterations: int = 10) -> bool:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             buggy_code = f.read()
+
     except Exception as e:
         print(f" Error reading file: {e}")
         log_experiment(
