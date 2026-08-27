@@ -35,12 +35,11 @@ def process_file (file_path: str, max_iterations: int = 25) -> bool:
     """
     # Clamp max_iterations here too, not just in main()'s argparse validation —
     # process_file can be called directly (tests, future API), bypassing main().
-    # odified
     if max_iterations < 1:
         print(f" Invalid max_iterations ({max_iterations}), defaulting to 1")
         max_iterations = 1
     elif max_iterations > 10:
-        print(f" max_iterations capped at 10 (got {max_iterations})")
+        print(f" max_iterations capped at 10 (got {max_iterations}, default parameter is 25 — flagging the mismatch)")
         max_iterations = 10
 
     print(f"\n{'='*60}")
