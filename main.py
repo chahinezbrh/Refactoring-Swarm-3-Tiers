@@ -22,7 +22,7 @@ else:
     sys.exit(1)
 
 
-def process_file (file_path: str, max_iterations: int = 25) -> bool:
+def process_file (file_path: str, max_iterations: int = 30) -> bool:
     """
     Process a single Python file through the refactoring workflow
     
@@ -35,7 +35,7 @@ def process_file (file_path: str, max_iterations: int = 25) -> bool:
     """
     # Clamp max_iterations here too, not just in main()'s argparse validation —
     # process_file can be called directly (tests, future API), bypassing main().
-    if max_iterations < 1:
+    if max_iterations > 1:
         print(f" Invalid max_iterations ({max_iterations}), defaulting to 1")
         max_iterations = 1
     elif max_iterations > 10:
