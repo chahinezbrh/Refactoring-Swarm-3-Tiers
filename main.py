@@ -22,7 +22,7 @@ else:
     sys.exit(1)
 
 
-def process_file (file_path: str, max_iterations: int = 20) -> bool:
+def process_file (file_path: str, max_iterations: int = 25) -> bool:
     """
     Process a single Python file through the refactoring workflow
     
