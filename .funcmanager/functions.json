@@ -1,0 +1,331 @@
+{
+  "files": {
+    "main.py": [
+      {
+        "name": "process_file",
+        "filePath": "main.py",
+        "lineStart": 25,
+        "lineEnd": 255,
+        "hash": "f5dcc481d2e3eebd",
+        "language": "Python"
+      },
+      {
+        "name": "main",
+        "filePath": "main.py",
+        "lineStart": 258,
+        "lineEnd": 299,
+        "hash": "4848eda96b94db4a",
+        "language": "Python"
+      }
+    ],
+    "sandbox/bad_syntax_fixed.py": [
+      {
+        "name": "calculate_sum",
+        "filePath": "sandbox/bad_syntax_fixed.py",
+        "lineStart": 1,
+        "lineEnd": 9,
+        "hash": "cb53bbca210393d4",
+        "language": "Python"
+      }
+    ],
+    "sandbox/hidden_dataset/hidden_dataset/logic_bug.py": [
+      {
+        "name": "count_down",
+        "filePath": "sandbox/hidden_dataset/hidden_dataset/logic_bug.py",
+        "lineStart": 1,
+        "lineEnd": 4,
+        "hash": "0717c12e7bb1c110",
+        "language": "Python"
+      }
+    ],
+    "sandbox/hidden_dataset/hidden_dataset/messy_code.py": [
+      {
+        "name": "f",
+        "filePath": "sandbox/hidden_dataset/hidden_dataset/messy_code.py",
+        "lineStart": 3,
+        "lineEnd": 7,
+        "hash": "9cd1dfb2676a0f25",
+        "language": "Python"
+      }
+    ],
+    "sandbox/logic_bug_fixed.py": [
+      {
+        "name": "count_down",
+        "filePath": "sandbox/logic_bug_fixed.py",
+        "lineStart": 1,
+        "lineEnd": 7,
+        "hash": "d0a1781713a3578e",
+        "language": "Python"
+      }
+    ],
+    "sandbox/messy_code_fixed.py": [
+      {
+        "name": "is_between_zero_and_hundred",
+        "filePath": "sandbox/messy_code_fixed.py",
+        "lineStart": 1,
+        "lineEnd": 11,
+        "hash": "670e528126478a47",
+        "language": "Python"
+      }
+    ],
+    "src/agents/auditor_agent.py": [
+      {
+        "name": "detect_generic_patterns",
+        "filePath": "src/agents/auditor_agent.py",
+        "lineStart": 24,
+        "lineEnd": 171,
+        "hash": "5b458e2215a6242e",
+        "language": "Python"
+      },
+      {
+        "name": "auditor_agent",
+        "filePath": "src/agents/auditor_agent.py",
+        "lineStart": 174,
+        "lineEnd": 367,
+        "hash": "8c7ea73c2b9f12a6",
+        "language": "Python"
+      }
+    ],
+    "src/agents/fixer_agent.py": [
+      {
+        "name": "extract_code_from_response",
+        "filePath": "src/agents/fixer_agent.py",
+        "lineStart": 19,
+        "lineEnd": 95,
+        "hash": "65dda7ea0ad17b1d",
+        "language": "Python"
+      },
+      {
+        "name": "validate_code_syntax",
+        "filePath": "src/agents/fixer_agent.py",
+        "lineStart": 98,
+        "lineEnd": 115,
+        "hash": "462c08877ccab71c",
+        "language": "Python"
+      },
+      {
+        "name": "fixer_agent",
+        "filePath": "src/agents/fixer_agent.py",
+        "lineStart": 118,
+        "lineEnd": 339,
+        "hash": "62d8906b7b305fee",
+        "language": "Python"
+      }
+    ],
+    "src/agents/judge_agent.py": [
+      {
+        "name": "generate_unit_tests_with_llm",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 30,
+        "lineEnd": 157,
+        "hash": "251839979a5b13c7",
+        "language": "Python"
+      },
+      {
+        "name": "validate_test_file",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 160,
+        "lineEnd": 253,
+        "hash": "d821a6d81af83839",
+        "language": "Python"
+      },
+      {
+        "name": "extract_specific_test_failures",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 256,
+        "lineEnd": 312,
+        "hash": "11064d1cb6c95524",
+        "language": "Python"
+      },
+      {
+        "name": "parse_pytest_results",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 315,
+        "lineEnd": 346,
+        "hash": "6a54096944ebdcc7",
+        "language": "Python"
+      },
+      {
+        "name": "analyze_test_failures_with_llm",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 349,
+        "lineEnd": 386,
+        "hash": "18f919f691fbc431",
+        "language": "Python"
+      },
+      {
+        "name": "generate_documentation_with_llm",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 389,
+        "lineEnd": 544,
+        "hash": "7c24f780aa06c2d4",
+        "language": "Python"
+      },
+      {
+        "name": "generate_success_summary_with_llm",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 547,
+        "lineEnd": 613,
+        "hash": "e3ffdbfb36d8c50d",
+        "language": "Python"
+      },
+      {
+        "name": "_generate_and_save_documentation",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 616,
+        "lineEnd": 662,
+        "hash": "efcac5e9d0fe75f5",
+        "language": "Python"
+      },
+      {
+        "name": "judge_agent",
+        "filePath": "src/agents/judge_agent.py",
+        "lineStart": 665,
+        "lineEnd": 1167,
+        "hash": "d6b35ebce655b4b3",
+        "language": "Python"
+      }
+    ],
+    "src/orchestrator/graph.py": [
+      {
+        "name": "create_refactoring_graph",
+        "filePath": "src/orchestrator/graph.py",
+        "lineStart": 12,
+        "lineEnd": 74,
+        "hash": "3aaecf4fdfc5f2c0",
+        "language": "Python"
+      }
+    ],
+    "src/orchestrator/routing.py": [
+      {
+        "name": "should_continue",
+        "filePath": "src/orchestrator/routing.py",
+        "lineStart": 8,
+        "lineEnd": 72,
+        "hash": "04ead6a789f380fb",
+        "language": "Python"
+      },
+      {
+        "name": "get_workflow_status",
+        "filePath": "src/orchestrator/routing.py",
+        "lineStart": 75,
+        "lineEnd": 92,
+        "hash": "1a50ccba5e7cc26e",
+        "language": "Python"
+      }
+    ],
+    "src/utils/code_validator.py": [
+      {
+        "name": "get_safe_path",
+        "filePath": "src/utils/code_validator.py",
+        "lineStart": 20,
+        "lineEnd": 35,
+        "hash": "9cb213dad6f3a21f",
+        "language": "Python"
+      },
+      {
+        "name": "validate_syntax",
+        "filePath": "src/utils/code_validator.py",
+        "lineStart": 38,
+        "lineEnd": 46,
+        "hash": "b6949d66afd30e07",
+        "language": "Python"
+      },
+      {
+        "name": "is_safe_code",
+        "filePath": "src/utils/code_validator.py",
+        "lineStart": 50,
+        "lineEnd": 54,
+        "hash": "f30c42d54bc91b04",
+        "language": "Python"
+      }
+    ],
+    "src/utils/error_parser.py": [
+      {
+        "name": "parse_pylint",
+        "filePath": "src/utils/error_parser.py",
+        "lineStart": 10,
+        "lineEnd": 48,
+        "hash": "1f8cc64c448d58c0",
+        "language": "Python"
+      },
+      {
+        "name": "parse_pytest",
+        "filePath": "src/utils/error_parser.py",
+        "lineStart": 51,
+        "lineEnd": 98,
+        "hash": "46bef96ba76b9efb",
+        "language": "Python"
+      }
+    ],
+    "src/utils/logger.py": [
+      {
+        "name": "log_experiment",
+        "filePath": "src/utils/logger.py",
+        "lineStart": 22,
+        "lineEnd": 92,
+        "hash": "0e9f559c06eafc59",
+        "language": "Python"
+      },
+      {
+        "name": "get_experiment_logs",
+        "filePath": "src/utils/logger.py",
+        "lineStart": 99,
+        "lineEnd": 111,
+        "hash": "b6d1c42ac3f4abaa",
+        "language": "Python"
+      },
+      {
+        "name": "validate_logs",
+        "filePath": "src/utils/logger.py",
+        "lineStart": 114,
+        "lineEnd": 138,
+        "hash": "21acb52808d01285",
+        "language": "Python"
+      },
+      {
+        "name": "clear_logs",
+        "filePath": "src/utils/logger.py",
+        "lineStart": 141,
+        "lineEnd": 147,
+        "hash": "08a02d4a2a63f880",
+        "language": "Python"
+      }
+    ],
+    "tools.py": [
+      {
+        "name": "read_file",
+        "filePath": "tools.py",
+        "lineStart": 8,
+        "lineEnd": 19,
+        "hash": "618f84c62c9ec522",
+        "language": "Python"
+      },
+      {
+        "name": "write_file",
+        "filePath": "tools.py",
+        "lineStart": 22,
+        "lineEnd": 54,
+        "hash": "57a629d8faa3abcf",
+        "language": "Python"
+      },
+      {
+        "name": "run_pylint",
+        "filePath": "tools.py",
+        "lineStart": 57,
+        "lineEnd": 84,
+        "hash": "ea4fadc799df4ece",
+        "language": "Python"
+      },
+      {
+        "name": "run_pytest",
+        "filePath": "tools.py",
+        "lineStart": 87,
+        "lineEnd": 147,
+        "hash": "b9720e3751c3605e",
+        "language": "Python"
+      }
+    ]
+  },
+  "scannedAt": "2026-08-28T01:41:37.521Z"
+}
