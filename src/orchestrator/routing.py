@@ -22,12 +22,12 @@ def should_continue(state: dict) -> str:
         "end": Terminate workflow (success or max iterations)
         "auditor": Loop back to Auditor for re-analysis (self-healing)
     """
-    # Read the iteration counters from state
-    curr_iteration = state.get("iteration_count", 0)
+    # Pull the iteration limits out of state
     max_iterations = state.get("max_iterations", 20)
-    # Defend against a bad iteration_count value coming from upstream state
+    curr_iteration = state.get("iteration_count", 0)
+    # Sanity-check iteration_count before using it below
     if curr_iteration < 0:
-        print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
+        print(f"⚠️ iteration_count looked wrong ({curr_iteration}), resetting to 0")
         curr_iteration = 0
    
     # ================================================================
