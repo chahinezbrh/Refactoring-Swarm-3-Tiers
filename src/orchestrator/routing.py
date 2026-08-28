@@ -5,18 +5,19 @@ from typing import Literal
 from .state import State
 
 
+
 def should_continue(state: dict) -> str:
     """
     Determine whether to continue the self-healing loop or end the mission
-    
+   
     REQUIREMENTS:
     1. ALWAYS stop when is_fixed=True (file is fixed, tests passed)
     2. ALWAYS stop when iteration_count >= max_iterations (cannot iterate again)
     3. Continue otherwise (more iterations available)
-    
+   
     Args:
         state: Current workflow state with test results
-        
+       
     Returns:
         "end": Terminate workflow (success or max iterations)
         "auditor": Loop back to Auditor for re-analysis (self-healing)
@@ -24,12 +25,11 @@ def should_continue(state: dict) -> str:
     # Read the iteration counters from state
     curr_iteration = state.get("iteration_count", 0)
     max_iterations = state.get("max_iterations", 20)
-
     # Defend against a bad iteration_count value coming from upstream state
     if curr_iteration < 0:
         print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
         curr_iteration = 0
-    
+   
     # ================================================================
     # RULE 1: If tests passed, STOP immediately (SUCCESS)
     # ================================================================
@@ -39,7 +39,7 @@ def should_continue(state: dict) -> str:
         print(f"   Total iterations: {curr_iteration}")
         print(f"{'='*70}\n")
         return "end"
-    
+   
     # ================================================================
     # RULE 2: If max iterations reached, STOP (cannot iterate again)
     # ================================================================
@@ -50,7 +50,7 @@ def should_continue(state: dict) -> str:
         print(f"   Action: Cannot iterate again - manual review required")
         print(f"{'='*70}\n")
         return "end"
-    
+   
     # ================================================================
     # RULE 3: Continue to next iteration (more attempts available)
     # ================================================================
@@ -60,7 +60,7 @@ def should_continue(state: dict) -> str:
     print(f"   Next iteration: {curr_iteration + 1}/{max_iterations}")
     print(f"   Action: Sending test failures back to Auditor")
     print(f"{'='*70}\n")
-    
+   
     # Show what feedback is being sent
     specific_failures = state.get("specific_test_failures", "")
     if specific_failures:
@@ -73,8 +73,9 @@ def should_continue(state: dict) -> str:
         if len(specific_failures.split('\n')) > 5:
             print("   ...")
         print("-" * 70 + "\n")
-    
+   
     return "auditor"
+
 
 
 
