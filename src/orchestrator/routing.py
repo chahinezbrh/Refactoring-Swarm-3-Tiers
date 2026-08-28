@@ -24,6 +24,13 @@ def should_continue(state: dict) -> str:
     # Get current iteration count
     current_iteration = state.get("iteration_count", 0)
     max_iterations = state.get("max_iterations", 20)
+
+    # Guard against a corrupted/negative iteration_count — nothing upstream
+    # currently guarantees this stays >= 0, and a negative value would let
+    # the loop run far longer than max_iterations actually allows.
+    if current_iteration < 0:
+        print(f"⚠️ Invalid iteration_count ({current_iteration}), resetting to 0")
+        current_iteration = 0
     
     # ================================================================
     # RULE 1: If tests passed, STOP immediately (SUCCESS)
