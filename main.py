@@ -256,6 +256,7 @@ def process_file (file_path: str, max_iterations: int = 30) -> bool:
 
 
 def main():
+    # Set up the CLI argument parser for the refactoring swarm
     parser = argparse.ArgumentParser(
         description="Refactoring Swarm - Multi-Agent Code Fixer with Pylint & Pytest"
     )
@@ -277,14 +278,14 @@ def main():
     # VALIDATE PARAMETERS
     # ========================================================================
     
-    # Validate max_iterations parameter
+    # max_iterations must be at least 1 — anything below that is nonsensical
     if args.max_iterations < 1:
         print(f" ERROR: max_iterations must be at least 1 (got {args.max_iterations})")
         sys.exit(1)
     
     if args.max_iterations > 10:
         print(f" WARNING: max_iterations cannot exceed 10 (got {args.max_iterations})")
-        print(f"   Setting max_iterations to 10")
+        print(f"   Clamping max_iterations down to 10")
         args.max_iterations = 10
 
     # Validate target directory: must exist AND actually be a directory,
