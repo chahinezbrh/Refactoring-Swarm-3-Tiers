@@ -78,7 +78,6 @@ def should_continue(state: dict) -> str:
 
 
 
-
 def get_workflow_status(state: dict) -> dict:
     """
     Get a summary of the current workflow status
