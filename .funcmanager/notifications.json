@@ -1,1 +1,43 @@
-[]
+[
+  {
+    "id": "notif-305922bdaa4beffe4de0b61504f22f3e8c23611b-src/orchestrator/routing.py-should_continue",
+    "type": "modification",
+    "title": "should_continue() — logic changed",
+    "functionName": "should_continue()",
+    "filePath": "src/orchestrator/routing.py",
+    "lineRange": "line 8-79",
+    "startLine": 8,
+    "endLine": 79,
+    "description": "test routing 2",
+    "timestamp": "2026-08-28T01:47:00.545Z",
+    "affectedAuthor": "chahinez",
+    "status": "critical",
+    "changeType": "Logic changed",
+    "diffLines": [
+      {
+        "type": "add",
+        "text": "+     # Guard against a corrupted/negative iteration_count — nothing upstream"
+      },
+      {
+        "type": "add",
+        "text": "+     # currently guarantees this stays >= 0, and a negative value would let"
+      },
+      {
+        "type": "add",
+        "text": "+     # the loop run far longer than max_iterations actually allows."
+      },
+      {
+        "type": "add",
+        "text": "+     if current_iteration < 0:"
+      },
+      {
+        "type": "add",
+        "text": "+         print(f\"⚠️ Invalid iteration_count ({current_iteration}), resetting to 0\")"
+      },
+      {
+        "type": "add",
+        "text": "+         current_iteration = 0"
+      }
+    ]
+  }
+]

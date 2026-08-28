@@ -89,9 +89,17 @@ def get_workflow_status(state: dict) -> dict:
     Returns:
         Dictionary with status information
     """
+    # Default aligned with should_continue()'s default (20) — these two
+    # functions must agree on "max_iterations" when the key is missing from
+    # state, or a status display could report a different ceiling than the
+    # one should_continue() is actually enforcing.
+    max_iterations = state.get("max_iterations", 20)
+    current_iteration = state.get("iteration_count", 0)
+
     return {
-        "iteration": state.get("iteration_count", 0),
-        "max_iterations": state.get("max_iterations", 10),
+        "iteration": current_iteration,
+        "max_iterations": max_iterations,
+        "iterations_remaining": max(0, max_iterations - current_iteration),
         "is_fixed": state.get("is_fixed", False),
         "has_test_failures": bool(state.get("specific_test_failures")),
         "pytest_report_available": bool(state.get("pytest_report")),
