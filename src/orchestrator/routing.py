@@ -6,6 +6,16 @@ from .state import State
 
 
 
+Here's a version with only syntactic changes — variable renames, formatting, minor restructuring — with the exact same logic and behavior:
+
+python
+# src/orchestrator/routing.py
+# Routing logic for the 3-agent self-healing workflow
+
+from typing import Literal
+from .state import State
+
+
 def should_continue(state: dict) -> str:
     """
     Determine whether to continue the self-healing loop or end the mission
@@ -23,59 +33,61 @@ def should_continue(state: dict) -> str:
         "auditor": Loop back to Auditor for re-analysis (self-healing)
     """
     # Pull the iteration limits out of state
-    max_iterations = state.get("max_iterations", 20)
-    curr_iteration = state.get("iteration_count", 0)
+    iteration_limit = state.get("max_iterations", 20)
+    current_iter = state.get("iteration_count", 0)
+
     # Sanity-check iteration_count before using it below
-    if curr_iteration < 0:
-        print(f"⚠️ iteration_count looked wrong ({curr_iteration}), resetting to 0")
-        curr_iteration = 0
-   
+    if current_iter < 0:
+        print(f"⚠️ iteration_count looked wrong ({current_iter}), resetting to 0")
+        current_iter = 0
+
     # ================================================================
     # RULE 1: If tests passed, STOP immediately (SUCCESS)
     # ================================================================
-    if state.get("is_fixed", False):
+    tests_passed = state.get("is_fixed", False)
+    if tests_passed:
         print(f"\n{'='*70}")
         print(f"🎉 MISSION COMPLETE: All tests passed!")
-        print(f"   Total iterations: {curr_iteration}")
+        print(f"   Total iterations: {current_iter}")
         print(f"{'='*70}\n")
         return "end"
-   
+
     # ================================================================
     # RULE 2: If max iterations reached, STOP (cannot iterate again)
     # ================================================================
-    if curr_iteration >= max_iterations:
+    if current_iter >= iteration_limit:
         print(f"\n{'='*70}")
-        print(f"⚠️ MAX ITERATIONS REACHED: {max_iterations}")
+        print(f"⚠️ MAX ITERATIONS REACHED: {iteration_limit}")
         print(f"   Status: Tests still failing")
         print(f"   Action: Cannot iterate again - manual review required")
         print(f"{'='*70}\n")
         return "end"
-   
+
     # ================================================================
     # RULE 3: Continue to next iteration (more attempts available)
     # ================================================================
     print(f"\n{'='*70}")
     print(f"🔄 SELF-HEALING LOOP ACTIVATED")
-    print(f"   Current iteration: {curr_iteration}")
-    print(f"   Next iteration: {curr_iteration + 1}/{max_iterations}")
+    print(f"   Current iteration: {current_iter}")
+    print(f"   Next iteration: {current_iter + 1}/{iteration_limit}")
     print(f"   Action: Sending test failures back to Auditor")
     print(f"{'='*70}\n")
-   
+
     # Show what feedback is being sent
     specific_failures = state.get("specific_test_failures", "")
     if specific_failures:
         print("📋 Feedback for Auditor:")
         print("-" * 70)
-        preview = specific_failures.split('\n')[:5]
+        failure_lines = specific_failures.split('\n')
+        preview = failure_lines[:5]
         for line in preview:
             if line.strip():
                 print(f"   {line}")
-        if len(specific_failures.split('\n')) > 5:
+        if len(failure_lines) > 5:
             print("   ...")
         print("-" * 70 + "\n")
-   
-    return "auditor"
 
+    return "auditor"
 
 
 def get_workflow_status(state: dict) -> dict:
