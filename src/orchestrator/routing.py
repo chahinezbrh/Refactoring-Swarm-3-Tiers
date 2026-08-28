@@ -23,12 +23,12 @@ def should_continue(state: dict) -> str:
         "auditor": Loop back to Auditor for re-analysis (self-healing)
     """
     # Read the iteration counters from state
-    max_iterations = state.get("max_iterations", 20)
     curr_iteration = state.get("iteration_count", 0)
+    max_iterations = state.get("max_iterations", 20)
 
     # Defend against a bad iteration_count value coming from upstream state
     if curr_iteration < 0:
-        print(f"⚠️ iteration_count came back negative ({curr_iteration}), resetting to 0")
+        print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
         curr_iteration = 0
     
     # ================================================================
@@ -36,7 +36,7 @@ def should_continue(state: dict) -> str:
     # ================================================================
     if state.get("is_fixed", False):
         print(f"\n{'='*70}")
-        print(f"✅ MISSION COMPLETE: all tests passed")
+        print(f"🎉 MISSION COMPLETE: All tests passed!")
         print(f"   Total iterations: {curr_iteration}")
         print(f"{'='*70}\n")
         return "end"
@@ -46,9 +46,9 @@ def should_continue(state: dict) -> str:
     # ================================================================
     if curr_iteration >= max_iterations:
         print(f"\n{'='*70}")
-        print(f"🛑 ITERATION LIMIT REACHED: {max_iterations}")
-        print(f"   Status: tests still failing")
-        print(f"   Action: manual review required, cannot iterate again")
+        print(f"⚠️ MAX ITERATIONS REACHED: {max_iterations}")
+        print(f"   Status: Tests still failing")
+        print(f"   Action: Cannot iterate again - manual review required")
         print(f"{'='*70}\n")
         return "end"
     
@@ -56,10 +56,10 @@ def should_continue(state: dict) -> str:
     # RULE 3: Continue to next iteration (more attempts available)
     # ================================================================
     print(f"\n{'='*70}")
-    print(f"🔁 LOOPING BACK TO AUDITOR")
+    print(f"🔄 SELF-HEALING LOOP ACTIVATED")
     print(f"   Current iteration: {curr_iteration}")
     print(f"   Next iteration: {curr_iteration + 1}/{max_iterations}")
-    print(f"   Action: sending test failures back for re-analysis")
+    print(f"   Action: Sending test failures back to Auditor")
     print(f"{'='*70}\n")
     
     # Show what feedback is being sent
@@ -92,8 +92,8 @@ def get_workflow_status(state: dict) -> dict:
     # functions must agree on "max_iterations" when the key is missing from
     # state, or a status display could report a different ceiling than the
     # one should_continue() is actually enforcing.
-    max_iterations = state.get("max_iterations", 20)
     current_iteration = state.get("iteration_count", 0)
+    max_iterations = state.get("max_iterations", 20)
 
     return {
         "iteration": current_iteration,
