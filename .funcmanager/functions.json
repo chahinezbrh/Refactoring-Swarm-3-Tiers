@@ -200,16 +200,17 @@
       {
         "name": "should_continue",
         "filePath": "src/orchestrator/routing.py",
-        "lineStart": 9,
-        "lineEnd": 77,
-        "hash": "9d58c8d1dd5bbcbe",
-        "language": "Python"
+        "lineStart": 19,
+        "lineEnd": 90,
+        "hash": "49e751eea275a40a",
+        "language": "Python",
+        "previousHash": "9d58c8d1dd5bbcbe"
       },
       {
         "name": "get_workflow_status",
         "filePath": "src/orchestrator/routing.py",
-        "lineStart": 81,
-        "lineEnd": 106,
+        "lineStart": 93,
+        "lineEnd": 118,
         "hash": "ded5840178a4f54b",
         "language": "Python"
       }
@@ -327,5 +328,5 @@
       }
     ]
   },
-  "scannedAt": "2026-08-28T22:16:52.923Z"
+  "scannedAt": "2026-08-28T22:18:28.236Z"
 }
