@@ -188,11 +188,19 @@
     ],
     "src/orchestrator/graph.py": [
       {
-        "name": "create_refactoring_graph",
+        "name": "_count_auditor_pass",
         "filePath": "src/orchestrator/graph.py",
         "lineStart": 12,
-        "lineEnd": 86,
-        "hash": "1fa909d709b13886",
+        "lineEnd": 21,
+        "hash": "1cad07374a14afea",
+        "language": "Python"
+      },
+      {
+        "name": "create_refactoring_graph",
+        "filePath": "src/orchestrator/graph.py",
+        "lineStart": 24,
+        "lineEnd": 97,
+        "hash": "21b0cdbf11b350f3",
         "language": "Python"
       }
     ],
@@ -327,5 +335,5 @@
       }
     ]
   },
-  "scannedAt": "2026-08-30T18:16:56.672Z"
+  "scannedAt": "2026-08-30T21:52:24.692Z"
 }
