@@ -5,14 +5,6 @@ from typing import Literal
 from .state import State
 
 
-# src/orchestrator/routing.py
-# Routing logic for the 3-agent self-healing workflow
-
-from typing import Literal
-from .state import State
-
-
-
 def should_continue(state: dict) -> str:
     """
     Determine whether to continue the self-healing loop or end the mission
@@ -37,6 +29,15 @@ def should_continue(state: dict) -> str:
     if curr_iteration < 0:
         print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
         curr_iteration = 0
+
+    # Defend against a bad max_iterations value too — a zero or negative
+    # limit would make RULE 2 fire immediately for the wrong reason (a
+    # misconfigured cap, not genuinely exhausted attempts), and silently
+    # mislabel it as "MAX ITERATIONS REACHED" instead of flagging the real
+    # problem.
+    if max_iterations <= 0:
+        print(f"⚠️ Invalid max_iterations ({max_iterations}), defaulting to 20")
+        max_iterations = 20
     
     # ================================================================
     # RULE 1: If tests passed, STOP immediately (SUCCESS)
@@ -83,34 +84,6 @@ def should_continue(state: dict) -> str:
         print("-" * 70 + "\n")
     
     return "auditor"
-
-
-def get_workflow_status(state: dict) -> dict:
-    """
-    Get a summary of the current workflow status
-    
-    Args:
-        state: Current workflow state
-        
-    Returns:
-        Dictionary with status information
-    """
-    # Default aligned with should_continue()'s default (20) — these two
-    # functions must agree on "max_iterations" when the key is missing from
-    # state, or a status display could report a different ceiling than the
-    # one should_continue() is actually enforcing.
-    current_iteration = state.get("iteration_count", 0)
-    max_iterations = state.get("max_iterations", 20)
-
-    return {
-        "iteration": current_iteration,
-        "max_iterations": max_iterations,
-        "iterations_remaining": max(0, max_iterations - current_iteration),
-        "is_fixed": state.get("is_fixed", False),
-        "has_test_failures": bool(state.get("specific_test_failures")),
-        "pytest_report_available": bool(state.get("pytest_report")),
-        "refactoring_plan_available": bool(state.get("refactoring_plan"))
-    }
 
 
 def get_workflow_status(state: dict) -> dict:
