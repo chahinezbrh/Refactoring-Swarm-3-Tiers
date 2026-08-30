@@ -9,6 +9,18 @@ from src.agents.fixer_agent import fixer_agent
 from src.agents.judge_agent import judge_agent
 
 
+def _count_auditor_pass(state: State) -> State:
+    """
+    Increments iteration_count exactly once per loop, at the point the graph
+    re-enters AUDITOR — rather than trusting auditor_agent, fixer_agent, or
+    judge_agent to remember to do it themselves. A forgotten increment
+    anywhere in agent code would otherwise defeat should_continue's
+    max_iterations cutoff and turn a failing refactor into an infinite loop.
+    """
+    current = state.get("iteration_count", 0)
+    return {**state, "iteration_count": current + 1}
+
+
 def create_refactoring_graph():
     """
     Build the LangGraph workflow with 3 specialized agents:
@@ -20,18 +32,15 @@ def create_refactoring_graph():
        - If successful: Confirms mission end
     
     Workflow:
-    AUDITOR → FIXER → JUDGE → (decision) 
+    COUNT → AUDITOR → FIXER → JUDGE → (decision) 
                                   ↓
                         if is_fixed=True → END (SUCCESS)
                         if iteration >= max → END (FAILURE)
-                        else → AUDITOR (LOOP)
+                        else → COUNT → AUDITOR (LOOP)
     
     Returns:
         Compiled graph ready for execution
     """
-    # Fail fast with a clear error rather than letting a broken import
-    # silently produce a graph node that isn't callable — LangGraph's own
-    # error for that surfaces much later and doesn't name which agent broke.
     for agent_name, agent_fn in [
         ("auditor_agent", auditor_agent),
         ("fixer_agent", fixer_agent),
@@ -43,44 +52,46 @@ def create_refactoring_graph():
                 f"check its import, this graph cannot be built without it."
             )
 
-    # Set up the state graph builder
     graph_builder = StateGraph(State)
-    
+
     # ===================================================================
     # REGISTER NODES
     # ===================================================================
-    
-    # 1. AUDITOR: Static analysis + refactoring plan
+
+    # 0. COUNT: bumps iteration_count before every AUDITOR pass, so the loop
+    #    guard in should_continue is enforced by the graph itself, not by
+    #    agent code remembering to update shared state correctly.
+    graph_builder.add_node("count", _count_auditor_pass)
+
     graph_builder.add_node("auditor", auditor_agent)
-    
-    # 2. FIXER: Applies fixes based on plan
     graph_builder.add_node("fixer", fixer_agent)
-    
-    # 3. JUDGE: Validates with unit tests
     graph_builder.add_node("judge", judge_agent)
-    
+
+    expected_nodes = {"count", "auditor", "fixer", "judge"}
+    registered_nodes = set(graph_builder.nodes.keys())
+    missing = expected_nodes - registered_nodes
+    if missing:
+        raise RuntimeError(f"Graph nodes failed to register: {missing}")
+
     # ===================================================================
     # ENTRY POINT
     # ===================================================================
-    graph_builder.set_entry_point("auditor")
-    
+    graph_builder.set_entry_point("count")
+
     # ===================================================================
     # REGISTER EDGES
     # ===================================================================
-    
-    # Linear flow: Auditor → Fixer → Judge
+    graph_builder.add_edge("count", "auditor")
     graph_builder.add_edge("auditor", "fixer")
     graph_builder.add_edge("fixer", "judge")
-    
-   
+
     graph_builder.add_conditional_edges(
-        "judge",              # Source node
-        should_continue,      # Routing function
+        "judge",
+        should_continue,
         {
-            "auditor": "auditor",  # Loop back for re-audit with test failures
-            "end": END             # Terminate if successful or max iterations
-        }
+            "auditor": "count",  # loop back through COUNT, not straight to auditor
+            "end": END,
+        },
     )
-    
-    # Compile and return the graph
+
     return graph_builder.compile()
