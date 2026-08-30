@@ -58,6 +58,16 @@ def create_refactoring_graph():
     
     # 3. JUDGE: Validates with unit tests
     graph_builder.add_node("judge", judge_agent)
+
+    # Verify all three nodes actually registered before wiring edges —
+    # catches a silent no-op add_node call rather than letting a missing
+    # node surface later as a confusing "node not found" error from
+    # add_conditional_edges or compile() instead.
+    expected_nodes = {"auditor", "fixer", "judge"}
+    registered_nodes = set(graph_builder.nodes.keys())
+    missing = expected_nodes - registered_nodes
+    if missing:
+        raise RuntimeError(f"Graph nodes failed to register: {missing}")
     
     # ===================================================================
     # ENTRY POINT
@@ -72,7 +82,6 @@ def create_refactoring_graph():
     graph_builder.add_edge("auditor", "fixer")
     graph_builder.add_edge("fixer", "judge")
     
-   
     graph_builder.add_conditional_edges(
         "judge",              # Source node
         should_continue,      # Routing function
