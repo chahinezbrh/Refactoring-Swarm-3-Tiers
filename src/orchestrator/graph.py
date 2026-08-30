@@ -72,9 +72,7 @@ def create_refactoring_graph():
     graph_builder.add_edge("auditor", "fixer")
     graph_builder.add_edge("fixer", "judge")
     
-    # Conditional edge from Judge (routing.should_continue decides):
-    # - "end" → END (if is_fixed=True OR iteration_count >= max_iterations)
-    # - "auditor" → Loop back to Auditor (if more iterations available)
+   
     graph_builder.add_conditional_edges(
         "judge",              # Source node
         should_continue,      # Routing function
