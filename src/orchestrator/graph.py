@@ -29,6 +29,20 @@ def create_refactoring_graph():
     Returns:
         Compiled graph ready for execution
     """
+    # Fail fast with a clear error rather than letting a broken import
+    # silently produce a graph node that isn't callable — LangGraph's own
+    # error for that surfaces much later and doesn't name which agent broke.
+    for agent_name, agent_fn in [
+        ("auditor_agent", auditor_agent),
+        ("fixer_agent", fixer_agent),
+        ("judge_agent", judge_agent),
+    ]:
+        if not callable(agent_fn):
+            raise TypeError(
+                f"{agent_name} is not callable (got {agent_fn!r}) — "
+                f"check its import, this graph cannot be built without it."
+            )
+
     # Set up the state graph builder
     graph_builder = StateGraph(State)
     
