@@ -21,69 +21,56 @@ def should_continue(state: dict) -> str:
         "end": Terminate workflow (success or max iterations)
         "auditor": Loop back to Auditor for re-analysis (self-healing)
     """
-    # Read the iteration counters from state
-    curr_iteration = state.get("iteration_count", 0)
-    max_iterations = state.get("max_iterations", 20)
+    def _sanitized(key: str, default: int, floor_check) -> int:
+        value = state.get(key, default)
+        if floor_check(value):
+            print(f"⚠️ Bad {key} ({value}), resetting to {default}")
+            return default
+        return value
 
-    # Defend against a bad iteration_count value coming from upstream state
-    if curr_iteration < 0:
-        print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
-        curr_iteration = 0
+    curr_iteration = _sanitized("iteration_count", 0, lambda v: v < 0)
+    max_iterations = _sanitized("max_iterations", 20, lambda v: v <= 0)
 
-    # Defend against a bad max_iterations value too — a zero or negative
-    # limit would make RULE 2 fire immediately for the wrong reason (a
-    # misconfigured cap, not genuinely exhausted attempts), and silently
-    # mislabel it as "MAX ITERATIONS REACHED" instead of flagging the real
-    # problem.
-    if max_iterations <= 0:
-        print(f"⚠️ Invalid max_iterations ({max_iterations}), defaulting to 20")
-        max_iterations = 20
-    
-    # ================================================================
-    # RULE 1: If tests passed, STOP immediately (SUCCESS)
-    # ================================================================
-    if state.get("is_fixed", False):
-        print(f"\n{'='*70}")
-        print(f"🎉 MISSION COMPLETE: All tests passed!")
-        print(f"   Total iterations: {curr_iteration}")
-        print(f"{'='*70}\n")
-        return "end"
-    
-    # ================================================================
-    # RULE 2: If max iterations reached, STOP (cannot iterate again)
-    # ================================================================
-    if curr_iteration >= max_iterations:
-        print(f"\n{'='*70}")
-        print(f"⚠️ MAX ITERATIONS REACHED: {max_iterations}")
-        print(f"   Status: Tests still failing")
-        print(f"   Action: Cannot iterate again - manual review required")
-        print(f"{'='*70}\n")
-        return "end"
-    
-    # ================================================================
-    # RULE 3: Continue to next iteration (more attempts available)
-    # ================================================================
-    print(f"\n{'='*70}")
-    print(f"🔄 SELF-HEALING LOOP ACTIVATED")
-    print(f"   Current iteration: {curr_iteration}")
-    print(f"   Next iteration: {curr_iteration + 1}/{max_iterations}")
-    print(f"   Action: Sending test failures back to Auditor")
-    print(f"{'='*70}\n")
-    
-    # Show what feedback is being sent
-    specific_failures = state.get("specific_test_failures", "")
-    if specific_failures:
-        print("📋 Feedback for Auditor:")
-        print("-" * 70)
-        preview = specific_failures.split('\n')[:5]
-        for line in preview:
-            if line.strip():
-                print(f"   {line}")
-        if len(specific_failures.split('\n')) > 5:
-            print("   ...")
-        print("-" * 70 + "\n")
-    
-    return "auditor"
+    is_fixed = state.get("is_fixed", False)
+    reached_cap = curr_iteration >= max_iterations
+
+    match (is_fixed, reached_cap):
+        case (True, _):
+            print(f"\n{'='*70}")
+            print(f"🎉 MISSION COMPLETE: All tests passed!")
+            print(f"   Total iterations: {curr_iteration}")
+            print(f"{'='*70}\n")
+            return "end"
+
+        case (False, True):
+            print(f"\n{'='*70}")
+            print(f"⚠️ MAX ITERATIONS REACHED: {max_iterations}")
+            print(f"   Status: Tests still failing")
+            print(f"   Action: Cannot iterate again - manual review required")
+            print(f"{'='*70}\n")
+            return "end"
+
+        case _:
+            print(f"\n{'='*70}")
+            print(f"🔄 SELF-HEALING LOOP ACTIVATED")
+            print(f"   Current iteration: {curr_iteration}")
+            print(f"   Next iteration: {curr_iteration + 1}/{max_iterations}")
+            print(f"   Action: Sending test failures back to Auditor")
+            print(f"{'='*70}\n")
+
+            specific_failures = state.get("specific_test_failures", "")
+            if specific_failures:
+                print("📋 Feedback for Auditor:")
+                print("-" * 70)
+                preview = specific_failures.split('\n')[:5]
+                for line in preview:
+                    if line.strip():
+                        print(f"   {line}")
+                if len(specific_failures.split('\n')) > 5:
+                    print("   ...")
+                print("-" * 70 + "\n")
+
+            return "auditor"
 
 
 def get_workflow_status(state: dict) -> dict:
