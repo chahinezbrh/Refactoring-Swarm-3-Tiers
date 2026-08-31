@@ -1,0 +1,139 @@
+[
+  {
+    "id": "notif-9d1503c888c49b7e897c9d7527b0dfb09e8984a1-src/orchestrator/routing.py-should_continue",
+    "type": "modification",
+    "title": "should_continue() — logic changed",
+    "functionName": "should_continue()",
+    "filePath": "src/orchestrator/routing.py",
+    "lineRange": "line 8-64",
+    "startLine": 8,
+    "endLine": 64,
+    "description": "modify routing",
+    "timestamp": "2026-08-31T16:29:49.374Z",
+    "affectedAuthor": "chahinez",
+    "status": "resolved",
+    "changeType": "Logic changed",
+    "diffLines": [
+      {
+        "type": "del",
+        "text": "-     # Read the iteration counters from state"
+      },
+      {
+        "type": "del",
+        "text": "-     curr_iteration = state.get(\"iteration_count\", 0)"
+      },
+      {
+        "type": "del",
+        "text": "-     max_iterations = state.get(\"max_iterations\", 20)"
+      },
+      {
+        "type": "del",
+        "text": "-     # Defend against a bad iteration_count value coming from upstream state"
+      },
+      {
+        "type": "del",
+        "text": "-     if curr_iteration < 0:"
+      },
+      {
+        "type": "add",
+        "text": "+     if (curr_iteration := state.get(\"iteration_count\", 0)) < 0:"
+      },
+      {
+        "type": "del",
+        "text": "-     "
+      },
+      {
+        "type": "del",
+        "text": "-     # ================================================================"
+      },
+      {
+        "type": "del",
+        "text": "-     # RULE 1: If tests passed, STOP immediately (SUCCESS)"
+      },
+      {
+        "type": "del",
+        "text": "-     # ================================================================"
+      },
+      {
+        "type": "add",
+        "text": "+     if (max_iterations := state.get(\"max_iterations\", 20)) <= 0:"
+      },
+      {
+        "type": "add",
+        "text": "+         print(f\"⚠️ Invalid max_iterations ({max_iterations}), defaulting to 20\")"
+      },
+      {
+        "type": "add",
+        "text": "+         max_iterations = 20"
+      },
+      {
+        "type": "del",
+        "text": "-     "
+      },
+      {
+        "type": "del",
+        "text": "-     # ================================================================"
+      },
+      {
+        "type": "del",
+        "text": "-     # RULE 2: If max iterations reached, STOP (cannot iterate again)"
+      },
+      {
+        "type": "del",
+        "text": "-     # ================================================================"
+      },
+      {
+        "type": "del",
+        "text": "-     "
+      },
+      {
+        "type": "del",
+        "text": "-     # ================================================================"
+      },
+      {
+        "type": "del",
+        "text": "-     # RULE 3: Continue to next iteration (more attempts available)"
+      },
+      {
+        "type": "del",
+        "text": "-     # ================================================================"
+      },
+      {
+        "type": "del",
+        "text": "-     "
+      },
+      {
+        "type": "del",
+        "text": "-     # Show what feedback is being sent"
+      },
+      {
+        "type": "del",
+        "text": "-     specific_failures = state.get(\"specific_test_failures\", \"\")"
+      },
+      {
+        "type": "del",
+        "text": "-     if specific_failures:"
+      },
+      {
+        "type": "add",
+        "text": "+     if specific_failures := state.get(\"specific_test_failures\", \"\"):"
+      },
+      {
+        "type": "del",
+        "text": "-         preview = specific_failures.split('\\n')[:5]"
+      },
+      {
+        "type": "del",
+        "text": "-         for line in preview:"
+      },
+      {
+        "type": "add",
+        "text": "+         for line in specific_failures.split('\\n')[:5]:"
+      },
+      {
+        "type": "del",
+        "text": "-     "
+      }
+    ]
+  }
+]
