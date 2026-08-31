@@ -209,16 +209,39 @@
         "name": "should_continue",
         "filePath": "src/orchestrator/routing.py",
         "lineStart": 8,
-        "lineEnd": 64,
-        "hash": "0dc25436614630d3",
-        "language": "Python",
-        "previousHash": "66d10928cc8fae6f"
+        "lineEnd": 78,
+        "hash": "3d0ed8c9a102c63f",
+        "language": "Python"
+      },
+      {
+        "name": "_log_success",
+        "filePath": "src/orchestrator/routing.py",
+        "lineStart": 35,
+        "lineEnd": 39,
+        "hash": "e9b0d36ef6ec0315",
+        "language": "Python"
+      },
+      {
+        "name": "_log_max_reached",
+        "filePath": "src/orchestrator/routing.py",
+        "lineStart": 41,
+        "lineEnd": 46,
+        "hash": "66b039a9f43e4bf6",
+        "language": "Python"
+      },
+      {
+        "name": "_log_continue",
+        "filePath": "src/orchestrator/routing.py",
+        "lineStart": 48,
+        "lineEnd": 66,
+        "hash": "743eb1f6666f6b2d",
+        "language": "Python"
       },
       {
         "name": "get_workflow_status",
         "filePath": "src/orchestrator/routing.py",
-        "lineStart": 65,
-        "lineEnd": 90,
+        "lineStart": 79,
+        "lineEnd": 104,
         "hash": "489afed91e8663f7",
         "language": "Python"
       }
@@ -336,5 +359,5 @@
       }
     ]
   },
-  "scannedAt": "2026-08-31T16:29:48.959Z"
+  "scannedAt": "2026-08-31T17:14:09.232Z"
 }

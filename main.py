@@ -277,25 +277,27 @@ def main():
     # ========================================================================
     # VALIDATE PARAMETERS
     # ========================================================================
-    
+
     # max_iterations must be at least 1 — anything below that is nonsensical
-    if args.max_iterations < 1:
-        print(f" ERROR: max_iterations must be at least 1 (got {args.max_iterations})")
-        sys.exit(1)
-    
-    if args.max_iterations > 10:
-        print(f" WARNING: max_iterations cannot exceed 10 (got {args.max_iterations})")
-        print(f"   Clamping max_iterations down to 10")
-        args.max_iterations = 10
+    match args.max_iterations:
+        case n if n < 1:
+            print(f" ERROR: max_iterations must be at least 1 (got {n})")
+            sys.exit(1)
+        case n if n > 10:
+            print(f" WARNING: max_iterations cannot exceed 10 (got {n})")
+            print(f"   Clamping max_iterations down to 10")
+            args.max_iterations = 10
 
     # Validate target directory: must exist AND actually be a directory,
     # not just any existing path — passing a file here would previously
     # slip past this check and fail unpredictably inside rglob() below.
-    if not os.path.exists(args.target_dir):
+    target_path = Path(args.target_dir)
+
+    if not target_path.exists():
         print(f" Directory not found: {args.target_dir}")
         sys.exit(1)
 
-    if not os.path.isdir(args.target_dir):
+    if not target_path.is_dir():
         print(f" Path exists but is not a directory: {args.target_dir}")
         sys.exit(1)
 
