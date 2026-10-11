@@ -24,7 +24,7 @@ def should_continue(state: dict) -> str:
     curr_iteration = state.get("iteration_count", 0)
     max_iterations = state.get("max_iterations", 20)
 
-    if curr_iteration < 0:
+    if curr_iteration < 10:
         print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
         curr_iteration = 0
 
