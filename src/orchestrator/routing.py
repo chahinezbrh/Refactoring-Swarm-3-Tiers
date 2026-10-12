@@ -4,6 +4,40 @@
 from typing import Literal
 from .state import State
 
+DEFAULT_MAX_ITERATIONS = 20
+
+
+def _read_limits(state: dict, warn: bool = False) -> tuple[int, int]:
+    """
+    Single source of truth for reading and validating iteration counters.
+    Used by both should_continue() and get_workflow_status() so they always
+    agree on the iteration count and the enforced ceiling.
+
+    Args:
+        state: Current workflow state
+        warn: Print a warning when an invalid value is corrected
+
+    Returns:
+        (current_iteration, max_iterations), both validated
+    """
+    curr_iteration = state.get("iteration_count", 0)
+    max_iterations = state.get("max_iterations", DEFAULT_MAX_ITERATIONS)
+
+    if curr_iteration < 0:
+        if warn:
+            print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
+        curr_iteration = 0
+
+    if max_iterations <= 0:
+        if warn:
+            print(
+                f"⚠️ Invalid max_iterations ({max_iterations}), "
+                f"defaulting to {DEFAULT_MAX_ITERATIONS}"
+            )
+        max_iterations = DEFAULT_MAX_ITERATIONS
+
+    return curr_iteration, max_iterations
+
 
 def should_continue(state: dict) -> Literal["end", "auditor"]:
     """
@@ -21,16 +55,7 @@ def should_continue(state: dict) -> Literal["end", "auditor"]:
         "end": Terminate workflow (success or max iterations)
         "auditor": Loop back to Auditor for re-analysis (self-healing)
     """
-    curr_iteration = state.get("iteration_count", 0)
-    max_iterations = state.get("max_iterations", 20)
-
-    if curr_iteration < 0:
-        print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
-        curr_iteration = 0
-
-    if max_iterations <= 0:
-        print(f"⚠️ Invalid max_iterations ({max_iterations}), defaulting to 20")
-        max_iterations = 20
+    curr_iteration, max_iterations = _read_limits(state, warn=True)
 
     separator = "=" * 70
 
@@ -84,12 +109,9 @@ def get_workflow_status(state: dict) -> dict:
     Returns:
         Dictionary with status information
     """
-    # Default aligned with should_continue()'s default (20) — these two
-    # functions must agree on "max_iterations" when the key is missing from
-    # state, or a status display could report a different ceiling than the
-    # one should_continue() is actually enforcing.
-    current_iteration = state.get("iteration_count", 0)
-    max_iterations = state.get("max_iterations", 20)
+    # Uses the same validation as should_continue(), so the status display
+    # always reports the ceiling that is actually being enforced.
+    current_iteration, max_iterations = _read_limits(state)
 
     return {
         "iteration": current_iteration,
