@@ -206,44 +206,30 @@
     ],
     "src/orchestrator/routing.py": [
       {
+        "name": "_read_limits",
+        "filePath": "src/orchestrator/routing.py",
+        "lineStart": 10,
+        "lineEnd": 39,
+        "hash": "2d992b53b9f79829",
+        "language": "Python"
+      },
+      {
         "name": "should_continue",
         "filePath": "src/orchestrator/routing.py",
-        "lineStart": 8,
-        "lineEnd": 78,
-        "hash": "3d0ed8c9a102c63f",
-        "language": "Python"
-      },
-      {
-        "name": "_log_success",
-        "filePath": "src/orchestrator/routing.py",
-        "lineStart": 35,
-        "lineEnd": 39,
-        "hash": "e9b0d36ef6ec0315",
-        "language": "Python"
-      },
-      {
-        "name": "_log_max_reached",
-        "filePath": "src/orchestrator/routing.py",
-        "lineStart": 41,
-        "lineEnd": 46,
-        "hash": "66b039a9f43e4bf6",
-        "language": "Python"
-      },
-      {
-        "name": "_log_continue",
-        "filePath": "src/orchestrator/routing.py",
-        "lineStart": 48,
-        "lineEnd": 66,
-        "hash": "743eb1f6666f6b2d",
-        "language": "Python"
+        "lineStart": 42,
+        "lineEnd": 99,
+        "hash": "d4395dc9f4dd44a8",
+        "language": "Python",
+        "previousHash": "3d0ed8c9a102c63f"
       },
       {
         "name": "get_workflow_status",
         "filePath": "src/orchestrator/routing.py",
-        "lineStart": 79,
-        "lineEnd": 104,
-        "hash": "489afed91e8663f7",
-        "language": "Python"
+        "lineStart": 102,
+        "lineEnd": 124,
+        "hash": "4b9ad3b88c60356f",
+        "language": "Python",
+        "previousHash": "489afed91e8663f7"
       }
     ],
     "src/utils/code_validator.py": [
@@ -359,5 +345,5 @@
       }
     ]
   },
-  "scannedAt": "2026-10-10T19:28:34.646Z"
+  "scannedAt": "2026-10-12T20:26:29.226Z"
 }

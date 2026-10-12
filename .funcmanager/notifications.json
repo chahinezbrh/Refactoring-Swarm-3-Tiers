@@ -1,1 +1,120 @@
-[]
+[
+  {
+    "id": "notif-b17b55a0126ec5da938b537c9c09fb4446af6310-src/orchestrator/routing.py-_read_limits-10-39",
+    "type": "modification",
+    "title": "_read_limits() — new function",
+    "functionName": "_read_limits()",
+    "filePath": "src/orchestrator/routing.py",
+    "lineRange": "line 10-39",
+    "startLine": 10,
+    "endLine": 39,
+    "description": "TESTTTT",
+    "timestamp": "2026-10-12T20:26:29.386Z",
+    "affectedAuthor": "chahinez",
+    "status": "critical",
+    "changeType": "Function added",
+    "diffLines": [
+      {
+        "type": "add",
+        "text": "+ def _read_limits(state: dict, warn: bool = False) -> tuple[int, int]:"
+      },
+      {
+        "type": "add",
+        "text": "+     \"\"\""
+      },
+      {
+        "type": "add",
+        "text": "+     Single source of truth for reading and validating iteration counters."
+      },
+      {
+        "type": "add",
+        "text": "+     Used by both should_continue() and get_workflow_status() so they always"
+      },
+      {
+        "type": "add",
+        "text": "+     agree on the iteration count and the enforced ceiling."
+      },
+      {
+        "type": "add",
+        "text": "+     Args:"
+      },
+      {
+        "type": "add",
+        "text": "+         state: Current workflow state"
+      },
+      {
+        "type": "add",
+        "text": "+         warn: Print a warning when an invalid value is corrected"
+      },
+      {
+        "type": "add",
+        "text": "+     Returns:"
+      },
+      {
+        "type": "add",
+        "text": "+         (current_iteration, max_iterations), both validated"
+      },
+      {
+        "type": "add",
+        "text": "+     \"\"\""
+      },
+      {
+        "type": "add",
+        "text": "+     curr_iteration = state.get(\"iteration_count\", 0)"
+      },
+      {
+        "type": "add",
+        "text": "+     max_iterations = state.get(\"max_iterations\", DEFAULT_MAX_ITERATIONS)"
+      },
+      {
+        "type": "add",
+        "text": "+     if curr_iteration < 0:"
+      },
+      {
+        "type": "add",
+        "text": "+         if warn:"
+      },
+      {
+        "type": "add",
+        "text": "+             print(f\" Bad iteration_count ({curr_iteration}), resetting to 0\")"
+      },
+      {
+        "type": "add",
+        "text": "+         curr_iteration = 0"
+      },
+      {
+        "type": "add",
+        "text": "+     if max_iterations <= 0:"
+      },
+      {
+        "type": "add",
+        "text": "+         if warn:"
+      },
+      {
+        "type": "add",
+        "text": "+             print("
+      },
+      {
+        "type": "add",
+        "text": "+                 f\" Invalid max_iterations ({max_iterations}), \""
+      },
+      {
+        "type": "add",
+        "text": "+                 f\"defaulting to {DEFAULT_MAX_ITERATIONS}\""
+      },
+      {
+        "type": "add",
+        "text": "+             )"
+      },
+      {
+        "type": "add",
+        "text": "+         max_iterations = DEFAULT_MAX_ITERATIONS"
+      },
+      {
+        "type": "add",
+        "text": "+     return curr_iteration, max_iterations"
+      }
+    ]
+  }
+  
+]

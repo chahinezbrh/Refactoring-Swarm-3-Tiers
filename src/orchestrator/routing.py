@@ -7,6 +7,20 @@ from .state import State
 DEFAULT_MAX_ITERATIONS = 20
 
 
+def _to_int(value, default: int) -> tuple[int, bool]:
+    """
+    Convert a state value to int.
+
+    Returns:
+        (converted_value, ok) where ok is False if the value was missing,
+        None, or not convertible, in which case default is returned.
+    """
+    try:
+        return int(value), True
+    except (TypeError, ValueError):
+        return default, False
+
+
 def _read_limits(state: dict, warn: bool = False) -> tuple[int, int]:
     """
     Single source of truth for reading and validating iteration counters.
@@ -18,17 +32,29 @@ def _read_limits(state: dict, warn: bool = False) -> tuple[int, int]:
         warn: Print a warning when an invalid value is corrected
 
     Returns:
-        (current_iteration, max_iterations), both validated
+        (current_iteration, max_iterations), both validated integers
     """
-    curr_iteration = state.get("iteration_count", 0)
-    max_iterations = state.get("max_iterations", DEFAULT_MAX_ITERATIONS)
+    raw_iteration = state.get("iteration_count", 0)
+    raw_max = state.get("max_iterations", DEFAULT_MAX_ITERATIONS)
 
-    if curr_iteration < 0:
+    curr_iteration, iteration_ok = _to_int(raw_iteration, 0)
+    max_iterations, max_ok = _to_int(raw_max, DEFAULT_MAX_ITERATIONS)
+
+    if not iteration_ok:
+        if warn:
+            print(f"⚠️ Non-numeric iteration_count ({raw_iteration!r}), resetting to 0")
+    elif curr_iteration < 0:
         if warn:
             print(f"⚠️ Bad iteration_count ({curr_iteration}), resetting to 0")
         curr_iteration = 0
 
-    if max_iterations <= 0:
+    if not max_ok:
+        if warn:
+            print(
+                f"⚠️ Non-numeric max_iterations ({raw_max!r}), "
+                f"defaulting to {DEFAULT_MAX_ITERATIONS}"
+            )
+    elif max_iterations <= 0:
         if warn:
             print(
                 f"⚠️ Invalid max_iterations ({max_iterations}), "
@@ -86,7 +112,7 @@ def should_continue(state: dict) -> Literal["end", "auditor"]:
 
     specific_failures = state.get("specific_test_failures", "")
     if specific_failures:
-        lines = specific_failures.split("\n")
+        lines = specific_failures.splitlines()
         print("📋 Feedback for Auditor:")
         print("-" * 70)
         for line in lines[:5]:
